@@ -1,0 +1,130 @@
+Com base no documento de requisitos anexado, quero que crie um protótipo funcional completo no Figma para um SaaS de faturação eletrónica, com versões Web (Desktop) e Mobile (Responsivo).
+
+O sistema chama-se "CHILEMBO FATURA" e deve seguir o modelo multi-tenant.
+
+## 🖥️ VERSÃO WEB (Desktop) - Telas Obrigatórias:
+
+### 1. Tela de Login
+- Campos: Email, Senha, "Esqueci minha senha"
+- Botão "Entrar"
+- Mensagem de bloqueio após múltiplas tentativas
+
+### 2. Tela de Recuperação de Senha
+- Campo: Email
+- Botão "Enviar link de recuperação"
+
+### 3. Dashboard Principal (pós-login)
+- Cards de resumo: Faturamento mensal, Total de faturas, Clientes ativos
+- Gráfico de faturamento mensal vs despesas (BI)
+- Previsão de fluxo de caixa com Machine Learning (indicador visual)
+- Menu lateral com: Faturas, Clientes, Produtos/Serviços, Relatórios, Configurações
+
+### 4. Gestão de Empresa (apenas Administrador do SaaS)
+- Formulário de cadastro: Nome da empresa, NIF
+- Validação de NIF duplicado (feedback visual)
+- Criação automática de ambiente isolado (mensagem de confirmação)
+
+### 5. Gestão de Usuários Internos (por empresa)
+- Lista de usuários com: Nome, Email, Perfil (Administrador/Operador/Visualizador), Status (Ativo/Inativo)
+- Botão "Novo Usuário"
+- Modal de criação/edição
+- Botão para ativar/desativar usuário
+
+### 6. Gestão de Clientes
+- Lista com: Nome, NIF, Tipo (Individual/Empresarial), Telefone
+- Botão "Novo Cliente"
+- Modal com campos: Nome, NIF (validação), Email, Telefone, Endereço, Tipo de cliente
+- Opção de campos personalizados (texto, número, data, obrigatório/opcional)
+
+### 7. Gestão de Produtos/Serviços
+- Lista com: Nome, Preço, Taxa de IVA, Status (Ativo/Inativo)
+- Botão "Novo Produto"
+- Modal com: Nome, Descrição, Preço, Taxa de IVA (dropdown: 0%, 7%, 14%, 21.5%)
+
+### 8. Emissão de Fatura (tela principal)
+- Cabeçalho: Seleção de série (ex: FT-001, FR-001), Data de emissão, Cliente (busca)
+- Tabela de itens com: Produto/Serviço, Quantidade, Preço unitário, IVA, Subtotal
+- Botão "Adicionar Item"
+- Totais: Subtotal, IVA total, Retenção na fonte (6,5% para serviços entre empresas), Total geral
+- Botões: "Salvar Rascunho", "Emitir Fatura", "Visualizar PDF"
+- Opção de moeda estrangeira com conversão para AOA
+- Número sequencial automático por empresa
+
+### 9. Lista de Faturas Emitidas
+- Tabela com: Número, Data, Cliente, Valor total, Status (Emitida/Anulada)
+- Botões: "Visualizar PDF", "Anular", "Duplicar"
+- Filtros por período, cliente, série
+
+### 10. Tela de Anulação de Fatura
+- Modal com: Campo obrigatório "Motivo da anulação"
+- Botão "Confirmar Anulação"
+- Mensagem: "Não é possível excluir definitivamente"
+
+### 11. Relatórios
+- Cards com: Relatório por período, por cliente, de IVA
+- Botões de exportação: PDF, Excel
+- Pré-visualização do relatório antes de exportar
+
+### 12. Configurações da Empresa
+- Upload de logotipo
+- Seletor de cor primária
+- Campos: Cabeçalho personalizado, Rodapé personalizado, Mensagem padrão
+- Seleção de template (múltiplos modelos)
+- Visualização prévia da fatura
+- Gestão de séries de faturação: Criar séries, definir prefixo (FT, FR, NC), associar por ponto de venda
+- Gestão de tipos de documento: Fatura, Fatura-Recibo, Nota de Crédito, Nota de Débito, Proforma
+
+### 13. Gestão de Planos (SaaS)
+- Cards dos planos: Básico, Profissional, Enterprise
+- Limite de faturas por plano
+- Botão "Upgrade/Downgrade"
+- Mensagem de bloqueio por inadimplência
+
+### 14. Integração AGT (SAF-T)
+- Botão "Exportar mensal"
+- Indicador de validação de integridade
+- Download do arquivo XML
+
+## 📱 VERSÃO MOBILE (Smartphone - até 430px de largura)
+
+Crie versões responsivas das seguintes telas principais:
+
+1. **Login e Recuperação de senha** (layout vertical, botões em tela cheia)
+2. **Dashboard Mobile** (cards empilhados, gráfico simplificado, navegação por bottom tabs)
+3. **Lista de Faturas Mobile** (cards em vez de tabela: número, cliente, valor, status)
+4. **Emissão de Fatura Mobile** (campos empilhados, botões fixos no rodapé)
+5. **Menu lateral substituído por bottom navigation** com ícones: Início, Faturas, Clientes, Relatórios, Perfil
+
+## 🎨 DESIGN SYSTEM
+
+- **Cores:** Primária: #2563EB (azul), Secundária: #10B981 (verde), Alerta: #EF4444 (vermelho), Fundo: #F9FAFB
+- **Tipografia:** Inter (para Web) / Roboto (para Mobile)
+- **Componentes:** Botões arredondados, cards com sombra suave, inputs com borda cinza
+- **Ícones:** Lucide ou Feather Icons
+
+## ✅ VALIDAÇÕES VISUAIS
+
+- Exibir mensagem de erro quando NIF duplicado
+- Exibir tooltip "Número sequencial automático - não pode ser editado"
+- Exibir badge "Assinado digitalmente" nas faturas
+- Exibir número do certificado AGT no rodapé das faturas
+- Exibir alerta se tentar pular número de fatura (exigência fiscal)
+
+## 🔄 INTERAÇÕES ESPERADAS
+
+- Ao clicar em "Emitir Fatura", mostrar modal de confirmação e gerar PDF
+- Ao clicar em "Anular", abrir modal com motivo obrigatório
+- Ao clicar em "Exportar SAF-T", mostrar progresso e download
+- Ao clicar em "Upgrade de plano", mostrar planos disponíveis
+
+## 🧩 PROTÓTIPO NAVEGÁVEL
+
+Conecte as telas para criar um fluxo clicável mínimo:
+- Login → Dashboard → Emitir Fatura → Lista de Faturas
+- Dashboard → Clientes → Novo Cliente
+- Dashboard → Relatórios → Exportar PDF
+- Configurações → Personalizar fatura → Visualização prévia
+
+---
+
+Agora, crie todas essas telas no Figma respeitando o sistema de design, utilizando componentes reutilizáveis e garantindo que tanto a versão Web quanto Mobile estejam funcionais e visualmente consistentes.
