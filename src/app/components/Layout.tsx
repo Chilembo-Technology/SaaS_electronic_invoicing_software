@@ -10,7 +10,8 @@ import {
   CreditCard,
   LogOut,
   Menu,
-  X
+  X,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Faturas", href: "/faturas", icon: FileText },
   { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
   { name: "Configurações", href: "/configuracoes", icon: Settings },
+  { name: "Lixeira", href: "/lixeira", icon: Trash2 },
 ];
 
 const adminNavigation = [

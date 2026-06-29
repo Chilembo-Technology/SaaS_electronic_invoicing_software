@@ -126,8 +126,8 @@ export function Dashboard() {
                 }}
               />
               <Legend />
-              <Bar dataKey="faturamento" fill="#2563EB" name="Faturamento" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="despesas" fill="#EF4444" name="Despesas" radius={[8, 8, 0, 0]} />
+              <Bar key="faturamento" dataKey="faturamento" fill="#2563EB" name="Faturamento" radius={[8, 8, 0, 0]} />
+              <Bar key="despesas" dataKey="despesas" fill="#EF4444" name="Despesas" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -159,6 +159,7 @@ export function Dashboard() {
               />
               <Legend />
               <Line
+                key="realizado"
                 type="monotone"
                 dataKey="realizado"
                 stroke="#10B981"
@@ -167,6 +168,7 @@ export function Dashboard() {
                 dot={{ fill: '#10B981', r: 6 }}
               />
               <Line
+                key="previsto"
                 type="monotone"
                 dataKey="previsto"
                 stroke="#8B5CF6"

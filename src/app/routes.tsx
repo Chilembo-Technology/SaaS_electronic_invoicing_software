@@ -13,6 +13,14 @@ import { Empresas } from "./pages/Empresas";
 import { Planos } from "./pages/Planos";
 import { Layout } from "./components/Layout";
 
+// Client panel
+import { ClientLayout } from "./components/ClientLayout";
+import { ClientDashboard } from "./pages/cliente/ClientDashboard";
+import { ClienteFaturas } from "./pages/cliente/ClienteFaturas";
+import { ClienteRelatorios } from "./pages/cliente/ClienteRelatorios";
+import { ClienteConfiguracoes } from "./pages/cliente/ClienteConfiguracoes";
+import { Lixeira } from "./pages/Lixeira";
+
 export const router = createBrowserRouter([
   {
     path: "/login",
@@ -22,6 +30,7 @@ export const router = createBrowserRouter([
     path: "/recuperar-senha",
     Component: RecuperarSenha,
   },
+  // Admin panel
   {
     path: "/",
     Component: Layout,
@@ -65,6 +74,49 @@ export const router = createBrowserRouter([
       {
         path: "planos",
         Component: Planos,
+      },
+      {
+        path: "lixeira",
+        Component: Lixeira,
+      },
+    ],
+  },
+  // Client panel
+  {
+    path: "/cliente",
+    Component: ClientLayout,
+    children: [
+      {
+        index: true,
+        Component: ClientDashboard,
+      },
+      {
+        path: "clientes",
+        Component: Clientes,
+      },
+      {
+        path: "produtos",
+        Component: Produtos,
+      },
+      {
+        path: "faturas",
+        Component: ClienteFaturas,
+      },
+      {
+        path: "faturas/emitir",
+        Component: EmitirFatura,
+      },
+      {
+        path: "relatorios",
+        Component: ClienteRelatorios,
+      },
+      {
+        path: "configuracoes",
+        Component: ClienteConfiguracoes,
+      },
+      {
+        path: "lixeira",
+        Component: Lixeira,
       },
     ],
   },
