@@ -52,14 +52,14 @@ export function ClienteRelatorios() {
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={ivaData} barGap={4}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-            <XAxis dataKey="mes" stroke="#64748B" style={{ fontSize: "12px" }} />
-            <YAxis
+            <CartesianGrid key="cr-grid" strokeDasharray="3 3" stroke="#E2E8F0" />
+            <XAxis key="cr-x" dataKey="mes" stroke="#64748B" style={{ fontSize: "12px" }} />
+            <YAxis key="cr-y"
               stroke="#64748B"
               style={{ fontSize: "11px" }}
               tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
             />
-            <Tooltip
+            <Tooltip key="cr-tooltip"
               formatter={(value: number) => [`${value.toLocaleString("pt-AO")} Kz`]}
               contentStyle={{ backgroundColor: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px" }}
             />

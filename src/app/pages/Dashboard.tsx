@@ -114,10 +114,10 @@ export function Dashboard() {
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={faturamentoData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="mes" stroke="#64748B" style={{ fontSize: '12px' }} />
-              <YAxis stroke="#64748B" style={{ fontSize: '12px' }} />
-              <Tooltip
+              <CartesianGrid key="bar-grid" strokeDasharray="3 3" stroke="#E2E8F0" />
+              <XAxis key="bar-x" dataKey="mes" stroke="#64748B" style={{ fontSize: '12px' }} />
+              <YAxis key="bar-y" stroke="#64748B" style={{ fontSize: '12px' }} />
+              <Tooltip key="bar-tooltip"
                 contentStyle={{
                   backgroundColor: '#ffffff',
                   border: '1px solid #E2E8F0',
@@ -125,7 +125,7 @@ export function Dashboard() {
                   boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                 }}
               />
-              <Legend />
+              <Legend key="bar-legend" />
               <Bar key="faturamento" dataKey="faturamento" fill="#2563EB" name="Faturamento" radius={[8, 8, 0, 0]} />
               <Bar key="despesas" dataKey="despesas" fill="#EF4444" name="Despesas" radius={[8, 8, 0, 0]} />
             </BarChart>
@@ -146,10 +146,10 @@ export function Dashboard() {
           </div>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={fluxoCaixaData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="mes" stroke="#64748B" style={{ fontSize: '12px' }} />
-              <YAxis stroke="#64748B" style={{ fontSize: '12px' }} />
-              <Tooltip
+              <CartesianGrid key="line-grid" strokeDasharray="3 3" stroke="#E2E8F0" />
+              <XAxis key="line-x" dataKey="mes" stroke="#64748B" style={{ fontSize: '12px' }} />
+              <YAxis key="line-y" stroke="#64748B" style={{ fontSize: '12px' }} />
+              <Tooltip key="line-tooltip"
                 contentStyle={{
                   backgroundColor: '#ffffff',
                   border: '1px solid #E2E8F0',
@@ -157,7 +157,7 @@ export function Dashboard() {
                   boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                 }}
               />
-              <Legend />
+              <Legend key="line-legend" />
               <Line
                 key="realizado"
                 type="monotone"

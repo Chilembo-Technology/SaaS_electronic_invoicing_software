@@ -143,14 +143,14 @@ export function ClientDashboard() {
           </div>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={faturamentoMensal} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="mes" stroke="#64748B" style={{ fontSize: "12px" }} />
-              <YAxis stroke="#64748B" style={{ fontSize: "11px" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
+              <CartesianGrid key="cd-grid" strokeDasharray="3 3" stroke="#E2E8F0" />
+              <XAxis key="cd-x" dataKey="mes" stroke="#64748B" style={{ fontSize: "12px" }} />
+              <YAxis key="cd-y" stroke="#64748B" style={{ fontSize: "11px" }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <Tooltip key="cd-tooltip"
                 formatter={(value: number) => [`${value.toLocaleString("pt-AO")} Kz`]}
                 contentStyle={{ backgroundColor: "#fff", border: "1px solid #E2E8F0", borderRadius: "8px" }}
               />
-              <Legend />
+              <Legend key="cd-legend" />
               <Bar key="faturado" dataKey="faturado" fill="#2563EB" name="Faturado" radius={[6, 6, 0, 0]} />
               <Bar key="recebido" dataKey="recebido" fill="#10B981" name="Recebido" radius={[6, 6, 0, 0]} />
             </BarChart>
