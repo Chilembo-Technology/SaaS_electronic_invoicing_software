@@ -1,9 +1,12 @@
 import { Link, useNavigate } from "react-router";
 import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff, ShieldCheck, Clock, Zap, FileCheck } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import axios from "axios";
 
 export function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [showSenha, setShowSenha] = useState(false);
@@ -20,20 +23,36 @@ export function Login() {
     setErro("");
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 800));
-
-    if (email && senha) {
+    try {
+      if (!email || !senha) {
+        throw new Error("Por favor, preencha o email e a senha.");
+      }
+      await login({ email, password: senha });
       navigate("/");
-    } else {
+    } catch (err: unknown) {
       const novasTentativas = tentativas + 1;
       setTentativas(novasTentativas);
       if (novasTentativas >= 3) {
         setErro("Conta temporariamente bloqueada. Aguarde ou recupere a sua senha.");
       } else {
-        setErro(`Credenciais inválidas. ${3 - novasTentativas} tentativa(s) restante(s).`);
+        let mensagem = "Credenciais inválidas ou dados incorretos.";
+        if (axios.isAxiosError(err)) {
+          const apiMessage = err.response?.data?.message || err.response?.data?.error;
+          if (apiMessage && typeof apiMessage === "string") {
+            mensagem = apiMessage;
+          } else if (err.response?.status === 422) {
+            mensagem = "Email ou senha incorretos.";
+          } else if (err.response?.status === 401) {
+            mensagem = "Credenciais inválidas.";
+          }
+        } else if (err instanceof Error) {
+          mensagem = err.message;
+        }
+        setErro(`${mensagem} — ${3 - novasTentativas} tentativa(s) restante(s).`);
       }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const features = [
