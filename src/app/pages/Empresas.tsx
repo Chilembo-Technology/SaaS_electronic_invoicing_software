@@ -1,8 +1,10 @@
 import { Plus, Search, Building2, CheckCircle, XCircle, MoreVertical, TrendingUp, Users, FileText, AlertTriangle, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { organizationService } from "../../services/organizationService";
+import { Company } from "../../types/api";
 
 interface Empresa {
-  id: number;
+  id: number | string;
   nome: string;
   nif: string;
   plano: "Básico" | "Profissional" | "Enterprise";
@@ -32,8 +34,33 @@ export function Empresas() {
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<"todos" | "Ativa" | "Suspensa">("todos");
   const [filtroPlano, setFiltroPlano] = useState<"todos" | string>("todos");
-  const [menuAberto, setMenuAberto] = useState<number | null>(null);
+  const [menuAberto, setMenuAberto] = useState<number | string | null>(null);
   const [modalSuspender, setModalSuspender] = useState<Empresa | null>(null);
+
+  useEffect(() => {
+    async function fetchCompanies() {
+      try {
+        const apiCompanies: Company[] = await organizationService.listCompanies();
+        if (apiCompanies && apiCompanies.length > 0) {
+          const mapped: Empresa[] = apiCompanies.map((c) => ({
+            id: c.id,
+            nome: c.name,
+            nif: c.nif || c.taxId || "5000000000",
+            plano: "Profissional",
+            faturas: 0,
+            limite: 200,
+            usuarios: 1,
+            status: "Ativa",
+            dataCriacao: c.createdAt || new Date().toISOString(),
+          }));
+          setEmpresas(mapped);
+        }
+      } catch (err) {
+        console.warn("Não foi possível carregar empresas da API. Utilizando dados mock.", err);
+      }
+    }
+    fetchCompanies();
+  }, []);
 
   const empresasFiltradas = empresas.filter((e) => {
     const matchBusca =
@@ -44,7 +71,7 @@ export function Empresas() {
     return matchBusca && matchStatus && matchPlano;
   });
 
-  const toggleStatus = (id: number) => {
+  const toggleStatus = (id: number | string) => {
     setEmpresas(empresas.map((e) =>
       e.id === id ? { ...e, status: e.status === "Ativa" ? "Suspensa" : "Ativa" } : e
     ));
