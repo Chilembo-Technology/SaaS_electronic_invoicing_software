@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthLoginCredentials } from '../types/api';
 import { authService } from '../services/authService';
-
-const TOKEN_KEY = '@SaaS:token';
+import { getStoredToken, setStoredToken, removeStoredToken } from '../lib/api';
 
 interface AuthContextData {
   user: User | null;
@@ -24,14 +23,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     async function loadStorageData() {
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = getStoredToken();
 
       if (token) {
         try {
           const userData = await authService.getProfile();
           setUser(userData);
         } catch {
-          localStorage.removeItem(TOKEN_KEY);
+          removeStoredToken();
           setUser(null);
         }
       }
@@ -44,12 +43,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: AuthLoginCredentials): Promise<void> => {
     const response = await authService.login(credentials);
-    localStorage.setItem(TOKEN_KEY, response.token);
-    setUser(response.user);
+    if (response.token) {
+      setStoredToken(response.token);
+    }
+    if (response.user) {
+      setUser(response.user);
+    } else {
+      try {
+        const userData = await authService.getProfile();
+        setUser(userData);
+      } catch {
+        setUser(null);
+      }
+    }
   };
 
   const logout = (): void => {
-    localStorage.removeItem(TOKEN_KEY);
+    authService.logout();
+    removeStoredToken();
     setUser(null);
     if (window.location.pathname !== '/login') {
       window.location.href = '/login';
