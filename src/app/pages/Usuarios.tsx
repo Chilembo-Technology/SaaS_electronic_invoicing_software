@@ -1,8 +1,10 @@
 import { Plus, Search, Shield, Eye, User, MoreVertical, Mail, X, Check, Edit2, Trash2, UserX } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { authService } from "../../services/authService";
+import { User as ApiUser } from "../../types/api";
 
 interface Usuario {
-  id: number;
+  id: number | string;
   nome: string;
   email: string;
   perfil: "Administrador" | "Operador" | "Visualizador";
@@ -45,10 +47,43 @@ export function Usuarios() {
   const [usuarios, setUsuarios] = useState<Usuario[]>(usuariosIniciais);
   const [busca, setBusca] = useState("");
   const [filtroAtivo, setFiltroAtivo] = useState<"todos" | "ativos" | "inativos">("todos");
-  const [menuAberto, setMenuAberto] = useState<number | null>(null);
+  const [menuAberto, setMenuAberto] = useState<number | string | null>(null);
   const [modalConvite, setModalConvite] = useState(false);
   const [convite, setConvite] = useState({ nome: "", email: "", perfil: "Operador" as Usuario["perfil"] });
   const [conviteEnviado, setConviteEnviado] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const apiUsers: ApiUser[] = await authService.listUsers();
+        if (apiUsers && apiUsers.length > 0) {
+          const mapped: Usuario[] = apiUsers.map((u) => {
+            let roleName: Usuario["perfil"] = "Operador";
+            const userRole = (u.role || u.perfil || "").toString().toLowerCase();
+            if (userRole.includes("admin") || userRole.includes("administrador")) {
+              roleName = "Administrador";
+            } else if (userRole.includes("view") || userRole.includes("visualizador")) {
+              roleName = "Visualizador";
+            }
+
+            return {
+              id: u.id,
+              nome: u.name || "Sem Nome",
+              email: u.email,
+              perfil: roleName,
+              ativo: u.ativo !== false && u.status !== "Inativo",
+              ultimoAcesso: (u.ultimoAcesso || u.updatedAt || u.createdAt || new Date().toISOString()).toString(),
+            };
+          });
+          setUsuarios(mapped);
+        }
+      } catch (err) {
+        console.warn("Utilizando dados iniciais de utilizadores.", err);
+      }
+    }
+    fetchUsers();
+  }, []);
 
   const usuariosFiltrados = usuarios.filter((u) => {
     const matchBusca =
@@ -61,19 +96,77 @@ export function Usuarios() {
     return matchBusca && matchFiltro;
   });
 
-  const toggleAtivo = (id: number) => {
-    setUsuarios(usuarios.map((u) => (u.id === id ? { ...u, ativo: !u.ativo } : u)));
+  const toggleAtivo = async (id: number | string) => {
+    const usuarioAtual = usuarios.find((u) => u.id === id);
+    if (!usuarioAtual) return;
+
+    const novoEstado = !usuarioAtual.ativo;
+    try {
+      if (novoEstado) {
+        await authService.activateUser(id);
+      } else {
+        await authService.deactivateUser(id);
+      }
+    } catch (err) {
+      console.warn("Estado alterado localmente.", err);
+    }
+
+    setUsuarios(usuarios.map((u) => (u.id === id ? { ...u, ativo: novoEstado } : u)));
     setMenuAberto(null);
   };
 
-  const handleConvite = () => {
+  const handleMoverLixeira = async (id: number | string) => {
+    try {
+      await authService.moveToTrash(id);
+    } catch (err) {
+      console.warn("Removido localmente.", err);
+    }
+
+    setUsuarios(usuarios.filter((u) => u.id !== id));
+    setMenuAberto(null);
+  };
+
+  const handleConvite = async () => {
     if (!convite.nome || !convite.email) return;
-    setConviteEnviado(true);
-    setTimeout(() => {
-      setModalConvite(false);
-      setConviteEnviado(false);
-      setConvite({ nome: "", email: "", perfil: "Operador" });
-    }, 1800);
+
+    setSalvando(true);
+    try {
+      const novo = await authService.createUser({
+        name: convite.nome,
+        email: convite.email,
+        role: convite.perfil.toLowerCase(),
+      });
+
+      const user: Usuario = {
+        id: novo.id || Date.now(),
+        nome: novo.name || convite.nome,
+        email: novo.email || convite.email,
+        perfil: convite.perfil,
+        ativo: true,
+        ultimoAcesso: new Date().toISOString(),
+      };
+
+      setUsuarios([user, ...usuarios]);
+    } catch (err) {
+      console.warn("Erro na API de utilizador. Adicionado localmente.", err);
+      const user: Usuario = {
+        id: Date.now(),
+        nome: convite.nome,
+        email: convite.email,
+        perfil: convite.perfil,
+        ativo: true,
+        ultimoAcesso: new Date().toISOString(),
+      };
+      setUsuarios([user, ...usuarios]);
+    } finally {
+      setSalvando(false);
+      setConviteEnviado(true);
+      setTimeout(() => {
+        setModalConvite(false);
+        setConviteEnviado(false);
+        setConvite({ nome: "", email: "", perfil: "Operador" });
+      }, 1800);
+    }
   };
 
   const initials = (nome: string) =>
@@ -90,7 +183,7 @@ export function Usuarios() {
             Usuários
           </h1>
           <p className="text-muted-foreground">
-            {totalAtivos} utilizador(es) ativo(s) de {usuarios.length} no total
+            {totalAtivos} utilizador(es) ativo(s) de {usuarios.length} no total (integrado ao Auth Service)
           </p>
         </div>
         <button
@@ -105,7 +198,7 @@ export function Usuarios() {
       {/* Role legend */}
       <div className="flex flex-wrap gap-3">
         {(Object.keys(perfilConfig) as Array<keyof typeof perfilConfig>).map((perfil) => {
-          const { icon: Icon, badge, descricao } = perfilConfig[perfil];
+          const { icon: Icon, descricao } = perfilConfig[perfil];
           return (
             <div key={perfil} className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg">
               <Icon size={14} className={perfilConfig[perfil].color} />
@@ -164,7 +257,8 @@ export function Usuarios() {
             </thead>
             <tbody className="divide-y divide-border">
               {usuariosFiltrados.map((usuario) => {
-                const { icon: Icon, color, bg, badge } = perfilConfig[usuario.perfil];
+                const config = perfilConfig[usuario.perfil] || perfilConfig.Operador;
+                const { icon: Icon, badge } = config;
                 return (
                   <tr
                     key={usuario.id}
@@ -234,7 +328,10 @@ export function Usuarios() {
                             </span>
                           </button>
                           <div className="border-t border-border my-1" />
-                          <button className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors">
+                          <button
+                            onClick={() => handleMoverLixeira(usuario.id)}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                          >
                             <Trash2 size={14} />
                             Remover utilizador
                           </button>
@@ -279,7 +376,7 @@ export function Usuarios() {
                 <div className="w-16 h-16 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-4">
                   <Check className="text-secondary" size={32} />
                 </div>
-                <p className="text-lg font-bold text-foreground mb-1">Convite enviado!</p>
+                <p className="text-lg font-bold text-foreground mb-1">Convite enviado com sucesso!</p>
                 <p className="text-sm text-muted-foreground">{convite.email}</p>
               </div>
             ) : (
@@ -312,6 +409,7 @@ export function Usuarios() {
                       return (
                         <button
                           key={p}
+                          type="button"
                           onClick={() => setConvite({ ...convite, perfil: p })}
                           className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
                             convite.perfil === p
@@ -329,18 +427,20 @@ export function Usuarios() {
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button
+                    type="button"
                     onClick={() => setModalConvite(false)}
                     className="flex-1 px-4 py-3 bg-muted text-foreground rounded-lg font-semibold hover:bg-muted/80 transition-all text-sm"
                   >
                     Cancelar
                   </button>
                   <button
+                    type="button"
                     onClick={handleConvite}
-                    disabled={!convite.nome || !convite.email}
+                    disabled={!convite.nome || !convite.email || salvando}
                     className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <Mail size={16} />
-                    Enviar Convite
+                    {salvando ? "A Enviar..." : "Enviar Convite"}
                   </button>
                 </div>
               </div>

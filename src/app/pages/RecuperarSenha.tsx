@@ -1,14 +1,26 @@
 import { Link } from "react-router";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import { authService } from "../../services/authService";
 
 export function RecuperarSenha() {
   const [email, setEmail] = useState("");
   const [enviado, setEnviado] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setEnviado(true);
+    if (!email || loading) return;
+
+    setLoading(true);
+    try {
+      await authService.recoverPassword(email);
+    } catch (err) {
+      console.warn("Processando solicitação de recuperação de senha.", err);
+    } finally {
+      setLoading(false);
+      setEnviado(true);
+    }
   };
 
   return (
@@ -49,10 +61,11 @@ export function RecuperarSenha() {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50"
             >
               <Mail size={20} />
-              Enviar Link de Recuperação
+              {loading ? "A Enviar..." : "Enviar Link de Recuperação"}
             </button>
 
             <Link

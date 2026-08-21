@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -33,6 +34,7 @@ const adminNavigation = [
 
 export function Layout() {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
@@ -41,6 +43,20 @@ export function Layout() {
     }
     return location.pathname.startsWith(href);
   };
+
+  const getInitials = (name?: string) => {
+    if (!name) return "US";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const userName = user?.name || "Luis Chilembo";
+  const userRole = (user?.role || user?.perfil || "Administrador").toString();
+  const userEmail = user?.email || "luis@chilembo.tech";
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -110,13 +126,17 @@ export function Layout() {
           <div className="p-4 border-t border-sidebar-border">
             <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-sidebar-accent">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold">
-                LM
+                {getInitials(userName)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-sidebar-foreground truncate">Luis Chilembo</p>
-                <p className="text-xs text-muted-foreground truncate">Administrador</p>
+                <p className="text-sm font-semibold text-sidebar-foreground truncate">{userName}</p>
+                <p className="text-xs text-muted-foreground truncate">{userRole}</p>
               </div>
-              <button className="text-muted-foreground hover:text-destructive transition-colors">
+              <button
+                onClick={logout}
+                title="Sair da Conta"
+                className="text-muted-foreground hover:text-destructive transition-colors p-1.5 rounded-lg hover:bg-background"
+              >
                 <LogOut size={18} />
               </button>
             </div>
@@ -191,6 +211,15 @@ export function Layout() {
                     </Link>
                   );
                 })}
+              </div>
+              <div className="pt-4 border-t border-sidebar-border">
+                <button
+                  onClick={logout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors font-medium text-sm"
+                >
+                  <LogOut size={20} />
+                  <span>Sair da Conta ({userEmail})</span>
+                </button>
               </div>
             </nav>
           </div>

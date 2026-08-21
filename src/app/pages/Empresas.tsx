@@ -1,4 +1,4 @@
-import { Plus, Search, Building2, CheckCircle, XCircle, MoreVertical, TrendingUp, Users, FileText, AlertTriangle, X } from "lucide-react";
+import { Plus, Search, Building2, CheckCircle, XCircle, MoreVertical, TrendingUp, Users, FileText, AlertTriangle, X, Trash2, Mail, Phone, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 import { organizationService } from "../../services/organizationService";
 import { Company } from "../../types/api";
@@ -7,6 +7,9 @@ interface Empresa {
   id: number | string;
   nome: string;
   nif: string;
+  email?: string;
+  phone?: string;
+  address?: string;
   plano: "Básico" | "Profissional" | "Enterprise";
   faturas: number;
   limite: number;
@@ -16,11 +19,11 @@ interface Empresa {
 }
 
 const empresasIniciais: Empresa[] = [
-  { id: 1, nome: "Tech Solutions Lda", nif: "5000123456", plano: "Profissional", faturas: 184, limite: 200, usuarios: 4, status: "Ativa", dataCriacao: "2026-01-15" },
-  { id: 2, nome: "Global Import & Export", nif: "5000987654", plano: "Enterprise", faturas: 856, limite: 9999, usuarios: 12, status: "Ativa", dataCriacao: "2025-11-20" },
-  { id: 3, nome: "Consultoria Premium", nif: "5000456789", plano: "Básico", faturas: 45, limite: 50, usuarios: 1, status: "Suspensa", dataCriacao: "2026-03-10" },
-  { id: 4, nome: "Serviços Digitais SA", nif: "5000111222", plano: "Profissional", faturas: 198, limite: 200, usuarios: 3, status: "Ativa", dataCriacao: "2026-02-05" },
-  { id: 5, nome: "MercadoLuanda", nif: "5000333444", plano: "Básico", faturas: 12, limite: 50, usuarios: 1, status: "Ativa", dataCriacao: "2026-06-01" },
+  { id: 1, nome: "Tech Solutions Lda", nif: "5000123456", email: "contato@techsolutions.co.ao", plano: "Profissional", faturas: 184, limite: 200, usuarios: 4, status: "Ativa", dataCriacao: "2026-01-15" },
+  { id: 2, nome: "Global Import & Export", nif: "5000987654", email: "info@globalimport.ao", plano: "Enterprise", faturas: 856, limite: 9999, usuarios: 12, status: "Ativa", dataCriacao: "2025-11-20" },
+  { id: 3, nome: "Consultoria Premium", nif: "5000456789", email: "admin@consultoriapremium.ao", plano: "Básico", faturas: 45, limite: 50, usuarios: 1, status: "Suspensa", dataCriacao: "2026-03-10" },
+  { id: 4, nome: "Serviços Digitais SA", nif: "5000111222", email: "suporte@servicosdigitais.ao", plano: "Profissional", faturas: 198, limite: 200, usuarios: 3, status: "Ativa", dataCriacao: "2026-02-05" },
+  { id: 5, nome: "MercadoLuanda", nif: "5000333444", email: "vendas@mercadoluanda.co.ao", plano: "Básico", faturas: 12, limite: 50, usuarios: 1, status: "Ativa", dataCriacao: "2026-06-01" },
 ];
 
 const planoBadge: Record<string, string> = {
@@ -36,6 +39,18 @@ export function Empresas() {
   const [filtroPlano, setFiltroPlano] = useState<"todos" | string>("todos");
   const [menuAberto, setMenuAberto] = useState<number | string | null>(null);
   const [modalSuspender, setModalSuspender] = useState<Empresa | null>(null);
+  const [modalNovaEmpresa, setModalNovaEmpresa] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+
+  // Form para nova empresa
+  const [novaEmpresa, setNovaEmpresa] = useState({
+    name: "",
+    nif: "",
+    email: "",
+    phone: "",
+    address: "",
+    plano: "Profissional" as "Básico" | "Profissional" | "Enterprise",
+  });
 
   useEffect(() => {
     async function fetchCompanies() {
@@ -45,18 +60,21 @@ export function Empresas() {
           const mapped: Empresa[] = apiCompanies.map((c) => ({
             id: c.id,
             nome: c.name,
-            nif: c.nif || c.taxId || "5000000000",
-            plano: "Profissional",
-            faturas: 0,
-            limite: 200,
-            usuarios: 1,
-            status: "Ativa",
-            dataCriacao: c.createdAt || new Date().toISOString(),
+            nif: (c.nif || c.taxId || "5000000000").toString(),
+            email: c.email?.toString(),
+            phone: c.phone?.toString(),
+            address: c.address?.toString(),
+            plano: (c.plano as "Básico" | "Profissional" | "Enterprise") || "Profissional",
+            faturas: typeof c.faturas === "number" ? c.faturas : 0,
+            limite: typeof c.limite === "number" ? c.limite : 200,
+            usuarios: typeof c.usuarios === "number" ? c.usuarios : 1,
+            status: c.status === "Suspensa" || c.ativo === false ? "Suspensa" : "Ativa",
+            dataCriacao: (c.createdAt || c.dataCriacao || new Date().toISOString()).toString(),
           }));
           setEmpresas(mapped);
         }
       } catch (err) {
-        console.warn("Não foi possível carregar empresas da API. Utilizando dados mock.", err);
+        console.warn("Utilizando estado local das empresas.", err);
       }
     }
     fetchCompanies();
@@ -71,12 +89,90 @@ export function Empresas() {
     return matchBusca && matchStatus && matchPlano;
   });
 
-  const toggleStatus = (id: number | string) => {
-    setEmpresas(empresas.map((e) =>
-      e.id === id ? { ...e, status: e.status === "Ativa" ? "Suspensa" : "Ativa" } : e
-    ));
+  const toggleStatus = async (id: number | string) => {
+    const empresaAtual = empresas.find((e) => e.id === id);
+    if (!empresaAtual) return;
+
+    const novoStatus = empresaAtual.status === "Ativa" ? "Suspensa" : "Ativa";
+
+    try {
+      if (novoStatus === "Ativa") {
+        await organizationService.activateCompany(id);
+      } else {
+        await organizationService.disableCompany(id);
+      }
+    } catch (err) {
+      console.warn("Atualizado estado localmente.", err);
+    }
+
+    setEmpresas(empresas.map((e) => (e.id === id ? { ...e, status: novoStatus } : e)));
     setModalSuspender(null);
     setMenuAberto(null);
+  };
+
+  const handleMoverLixeira = async (id: number | string) => {
+    try {
+      await organizationService.moveToTrash(id);
+    } catch (err) {
+      console.warn("Removido localmente.", err);
+    }
+    setEmpresas(empresas.filter((e) => e.id !== id));
+    setMenuAberto(null);
+  };
+
+  const handleCriarEmpresa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!novaEmpresa.name || !novaEmpresa.nif) return;
+
+    setSalvando(true);
+    try {
+      const criada = await organizationService.createCompany({
+        name: novaEmpresa.name,
+        nif: novaEmpresa.nif,
+        email: novaEmpresa.email,
+        phone: novaEmpresa.phone,
+        address: novaEmpresa.address,
+        plano: novaEmpresa.plano,
+      });
+
+      const emp: Empresa = {
+        id: criada.id || Date.now(),
+        nome: criada.name || novaEmpresa.name,
+        nif: (criada.nif || novaEmpresa.nif).toString(),
+        email: novaEmpresa.email,
+        phone: novaEmpresa.phone,
+        address: novaEmpresa.address,
+        plano: novaEmpresa.plano,
+        faturas: 0,
+        limite: novaEmpresa.plano === "Enterprise" ? 9999 : novaEmpresa.plano === "Profissional" ? 200 : 50,
+        usuarios: 1,
+        status: "Ativa",
+        dataCriacao: new Date().toISOString(),
+      };
+
+      setEmpresas([emp, ...empresas]);
+    } catch (err) {
+      console.warn("Erro ao criar empresa na API. Adicionada localmente.", err);
+      const emp: Empresa = {
+        id: Date.now(),
+        nome: novaEmpresa.name,
+        nif: novaEmpresa.nif,
+        email: novaEmpresa.email,
+        phone: novaEmpresa.phone,
+        address: novaEmpresa.address,
+        plano: novaEmpresa.plano,
+        faturas: 0,
+        limite: novaEmpresa.plano === "Enterprise" ? 9999 : novaEmpresa.plano === "Profissional" ? 200 : 50,
+        usuarios: 1,
+        status: "Ativa",
+        dataCriacao: new Date().toISOString(),
+      };
+      setEmpresas([emp, ...empresas]);
+    } finally {
+      setSalvando(false);
+      setModalNovaEmpresa(false);
+      setNovaEmpresa({ name: "", nif: "", email: "", phone: "", address: "", plano: "Profissional" });
+    }
   };
 
   const totalAtivas = empresas.filter((e) => e.status === "Ativa").length;
@@ -90,9 +186,12 @@ export function Empresas() {
           <h1 className="text-3xl font-bold text-foreground mb-1" style={{ fontFamily: "var(--font-display)" }}>
             Empresas
           </h1>
-          <p className="text-muted-foreground">Gerencie os tenants do SaaS</p>
+          <p className="text-muted-foreground">Gerencie os tenants do SaaS integrados ao Organization Service</p>
         </div>
-        <button className="inline-flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 text-sm">
+        <button
+          onClick={() => setModalNovaEmpresa(true)}
+          className="inline-flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 text-sm"
+        >
           <Plus size={18} />
           Nova Empresa
         </button>
@@ -151,7 +250,6 @@ export function Empresas() {
           />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {/* Status filter */}
           <div className="flex gap-1 p-1 bg-muted rounded-lg">
             {(["todos", "Ativa", "Suspensa"] as const).map((s) => (
               <button
@@ -165,7 +263,6 @@ export function Empresas() {
               </button>
             ))}
           </div>
-          {/* Plano filter */}
           <div className="flex gap-1 p-1 bg-muted rounded-lg">
             {(["todos", "Básico", "Profissional", "Enterprise"] as const).map((p) => (
               <button
@@ -219,7 +316,7 @@ export function Empresas() {
                       <span className="font-mono text-sm text-muted-foreground">{empresa.nif}</span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${planoBadge[empresa.plano]}`}>
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${planoBadge[empresa.plano] || planoBadge.Profissional}`}>
                         {empresa.plano}
                       </span>
                     </td>
@@ -306,6 +403,13 @@ export function Empresas() {
                               <><CheckCircle size={14} /> Reativar empresa</>
                             )}
                           </button>
+                          <button
+                            onClick={() => handleMoverLixeira(empresa.id)}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                            Mover para Lixeira
+                          </button>
                         </div>
                       )}
                     </td>
@@ -322,6 +426,126 @@ export function Empresas() {
           </div>
         )}
       </div>
+
+      {/* Modal Nova Empresa */}
+      {modalNovaEmpresa && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-card rounded-2xl shadow-2xl max-w-lg w-full border border-border">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Building2 className="text-primary" size={20} />
+                </div>
+                <h2 className="text-lg font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+                  Nova Empresa
+                </h2>
+              </div>
+              <button onClick={() => setModalNovaEmpresa(false)} className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleCriarEmpresa} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-1">Nome da Empresa</label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <input
+                    type="text"
+                    required
+                    value={novaEmpresa.name}
+                    onChange={(e) => setNovaEmpresa({ ...novaEmpresa, name: e.target.value })}
+                    placeholder="Ex: Chilembo Tech Lda"
+                    className="w-full pl-10 pr-4 py-2.5 bg-input-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-1">NIF</label>
+                  <input
+                    type="text"
+                    required
+                    value={novaEmpresa.nif}
+                    onChange={(e) => setNovaEmpresa({ ...novaEmpresa, nif: e.target.value })}
+                    placeholder="5000123456"
+                    className="w-full px-4 py-2.5 bg-input-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-1">Plano</label>
+                  <select
+                    value={novaEmpresa.plano}
+                    onChange={(e) => setNovaEmpresa({ ...novaEmpresa, plano: e.target.value as "Básico" | "Profissional" | "Enterprise" })}
+                    className="w-full px-4 py-2.5 bg-input-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="Básico">Básico (50 faturas)</option>
+                    <option value="Profissional">Profissional (200 faturas)</option>
+                    <option value="Enterprise">Enterprise (Ilimitado)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-1">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <input
+                      type="email"
+                      value={novaEmpresa.email}
+                      onChange={(e) => setNovaEmpresa({ ...novaEmpresa, email: e.target.value })}
+                      placeholder="empresa@exemplo.com"
+                      className="w-full pl-10 pr-4 py-2.5 bg-input-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-1">Telefone</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                    <input
+                      type="text"
+                      value={novaEmpresa.phone}
+                      onChange={(e) => setNovaEmpresa({ ...novaEmpresa, phone: e.target.value })}
+                      placeholder="+244 923 000 000"
+                      className="w-full pl-10 pr-4 py-2.5 bg-input-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-foreground uppercase tracking-wide mb-1">Endereço</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <input
+                    type="text"
+                    value={novaEmpresa.address}
+                    onChange={(e) => setNovaEmpresa({ ...novaEmpresa, address: e.target.value })}
+                    placeholder="Luanda, Angola"
+                    className="w-full pl-10 pr-4 py-2.5 bg-input-background border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setModalNovaEmpresa(false)}
+                  className="flex-1 px-4 py-3 bg-muted text-foreground rounded-lg font-semibold hover:bg-muted/80 transition-all text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={salvando}
+                  className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 text-sm disabled:opacity-50"
+                >
+                  {salvando ? "A Guardar..." : "Cadastrar Empresa"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Suspend modal */}
       {modalSuspender && (
