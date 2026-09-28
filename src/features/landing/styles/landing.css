@@ -1,0 +1,98 @@
+/* ==========================================================================
+   Landing Page — estilos específicos da página pública "Fatura Mais"
+   Complementa o Tailwind v4; as cores da marca vivem em src/styles/theme.css
+   (--brand-navy #104b7d · --brand-green #00b884 · --brand-teal #3d9b9b).
+   ========================================================================== */
+
+html:has(.landing-scope) {
+  scroll-behavior: smooth;
+}
+
+/* Compensa a altura do header fixo ao navegar por âncoras (#planos, #faq…) */
+.landing-anchor {
+  scroll-margin-top: 6.5rem;
+}
+
+/* ---------------------------------------------------------------- Hero --- */
+.landing-hero {
+  background:
+    radial-gradient(60rem 30rem at 88% -10%, rgba(61, 155, 155, 0.2), transparent 62%),
+    radial-gradient(45rem 26rem at 2% 4%, rgba(0, 184, 132, 0.16), transparent 58%),
+    linear-gradient(180deg, #ffffff 0%, #f3f8fb 55%, #eaf4f4 100%);
+}
+
+.landing-hero-grid {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='46'%3E%3Cpath d='M46 0H0v46' fill='none' stroke='%23104b7d' stroke-opacity='0.09' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 46px 46px;
+}
+
+/* --------------------------------------------------------------- Marca --- */
+.landing-gradient-text {
+  background-image: linear-gradient(92deg, #104b7d 0%, #3d9b9b 52%, #00b884 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-navy-band {
+  background-image: linear-gradient(115deg, #0b3a61 0%, #104b7d 46%, #3d9b9b 100%);
+}
+
+.landing-invoice-shadow {
+  box-shadow:
+    0 32px 64px -24px rgba(16, 75, 125, 0.35),
+    0 12px 28px -14px rgba(11, 58, 97, 0.28);
+}
+
+/* --------------------------------------------------------- Animações --- */
+@keyframes landingFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.landing-fade-up {
+  animation: landingFadeUp 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.landing-float {
+  animation: landingFloat 6s ease-in-out infinite;
+}
+
+.landing-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.landing-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.landing-delay-3 {
+  animation-delay: 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-fade-up,
+  .landing-float {
+    animation: none !important;
+  }
+
+  html:has(.landing-scope) {
+    scroll-behavior: auto;
+  }
+}

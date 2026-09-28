@@ -13,6 +13,10 @@ import { Empresas } from "./pages/Empresas";
 import { Planos } from "./pages/Planos";
 import { Layout } from "./components/Layout";
 
+// Páginas públicas (utilizadores NÃO autenticados)
+import { LandingPage } from "../features/landing/pages/LandingPage";
+import { RegisterPage } from "../features/auth/pages/RegisterPage";
+
 // Client panel
 import { ClientLayout } from "./components/ClientLayout";
 import { ClientDashboard } from "./pages/cliente/ClientDashboard";
@@ -22,6 +26,15 @@ import { ClienteConfiguracoes } from "./pages/cliente/ClienteConfiguracoes";
 import { Lixeira } from "./pages/Lixeira";
 
 export const router = createBrowserRouter([
+  // Landing page pública — `/` pertence agora a esta rota
+  {
+    path: "/",
+    Component: LandingPage,
+  },
+  {
+    path: "/registar",
+    Component: RegisterPage,
+  },
   {
     path: "/login",
     Component: Login,
@@ -31,12 +44,13 @@ export const router = createBrowserRouter([
     Component: RecuperarSenha,
   },
   // Admin panel
+  // Rota "pathless": fornece apenas o shell (Layout) aos filhos, sem reclamar
+  // o path "/" — que passou a ser a Landing Page.
   {
-    path: "/",
     Component: Layout,
     children: [
       {
-        index: true,
+        path: "dashboard",
         Component: Dashboard,
       },
       {
