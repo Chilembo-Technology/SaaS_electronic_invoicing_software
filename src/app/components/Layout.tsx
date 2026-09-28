@@ -17,7 +17,7 @@ import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Clientes", href: "/clientes", icon: Users },
   { name: "Produtos", href: "/produtos", icon: Package },
   { name: "Faturas", href: "/faturas", icon: FileText },
@@ -38,8 +38,8 @@ export function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
-    if (href === "/") {
-      return location.pathname === "/";
+    if (href === "/dashboard") {
+      return location.pathname === "/dashboard";
     }
     return location.pathname.startsWith(href);
   };
@@ -65,9 +65,7 @@ export function Layout() {
         <div className="flex-1 flex flex-col">
           {/* Logo */}
           <div className="h-20 flex items-center px-6 border-b border-sidebar-border">
-            <h1 className="text-2xl font-bold text-primary" style={{ fontFamily: 'var(--font-display)' }}>
-              CHILEMBO FATURA
-            </h1>
+            <img src="/logo.png" alt="Fatura Mais" className="w-full h-full object-contain" />
           </div>
 
           {/* Navigation */}
@@ -148,7 +146,7 @@ export function Layout() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border">
         <div className="flex items-center justify-between h-16 px-4">
           <h1 className="text-lg font-bold text-primary" style={{ fontFamily: 'var(--font-display)' }}>
-            CHILEMBO FATURA
+            FATURA MAIS
           </h1>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

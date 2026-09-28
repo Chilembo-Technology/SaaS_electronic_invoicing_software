@@ -28,7 +28,7 @@ export function Login() {
         throw new Error("Por favor, preencha o email e a senha.");
       }
       await login({ email, password: senha });
-      navigate("/");
+      navigate("/dashboard");
     } catch (err: unknown) {
       const novasTentativas = tentativas + 1;
       setTentativas(novasTentativas);
@@ -69,12 +69,10 @@ export function Login() {
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/25 mb-4">
-              <span className="text-2xl font-bold text-white">CF</span>
-            </div>
-            <h1 className="text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
-              CHILEMBO FATURA
-            </h1>
+         <div className="inline-flex items-center justify-center w-16 h-16    mb-4">
+  <img src="/logo_with_name.png" alt="Fatura Mais" className="w-full h-full object-contain" />
+</div>
+            
             <p className="text-muted-foreground text-sm">Sistema de Faturação Eletrónica para Angola</p>
           </div>
 
@@ -279,7 +277,7 @@ export function Login() {
               ))}
             </div>
             <p className="text-sm text-white/70">
-              <strong className="text-white">+500 empresas</strong> confiam no CHILEMBO FATURA
+              <strong className="text-white">+500 empresas</strong> confiam no FATURA MAIS
             </p>
           </div>
         </div>

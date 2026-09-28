@@ -1,6 +1,6 @@
 Com base no documento de requisitos anexado, quero que crie um protótipo funcional completo no Figma para um SaaS de faturação eletrónica, com versões Web (Desktop) e Mobile (Responsivo).
 
-O sistema chama-se "CHILEMBO FATURA" e deve seguir o modelo multi-tenant.
+O sistema chama-se "FATURA MAIS" e deve seguir o modelo multi-tenant.
 
 ## 🖥️ VERSÃO WEB (Desktop) - Telas Obrigatórias:
 

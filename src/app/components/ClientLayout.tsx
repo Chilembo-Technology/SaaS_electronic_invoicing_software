@@ -45,9 +45,7 @@ export function ClientLayout() {
         <div className="flex-1 flex flex-col">
           {/* Logo + Plan Badge */}
           <div className="h-20 flex items-center justify-between px-6 border-b border-sidebar-border">
-            <h1 className="text-xl font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>
-              CHILEMBO FATURA
-            </h1>
+           <img src="/logo.png" alt="Fatura Mais" className="w-full h-full object-contain" />
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 uppercase tracking-wide">
               PRO
             </span>
@@ -132,7 +130,7 @@ export function ClientLayout() {
         <div className="flex items-center justify-between h-16 px-4">
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold text-primary" style={{ fontFamily: "var(--font-display)" }}>
-              CHILEMBO FATURA
+              FATURA MAIS
             </h1>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 uppercase">
               PRO
