@@ -57,9 +57,17 @@ export function AuthShell({
             <p className="text-sm text-muted-foreground">{subtitle}</p>
           </div>
 
-          {children}
+          {/*
+            Mesmo contexto visual do registo (`RegisterPage`): o formulário vive
+            dentro de um card branco (`bg-card`). É este contraste que faz o
+            fundo cinza dos campos (`bg-background`, definido no `FormField`)
+            aparecer dentro dos inputs.
+          */}
+          <div className="w-full rounded-2xl border border-border bg-card p-6 shadow-sm transition-shadow duration-200 sm:p-8">
+            {children}
+          </div>
 
-          <p className="pt-2 text-center text-xs text-muted-foreground">
+          <p className="text-center text-xs text-muted-foreground">
             © {new Date().getFullYear()} CHILEMBO TECHNOLOGY · Todos os direitos reservados
           </p>
         </div>

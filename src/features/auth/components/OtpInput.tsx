@@ -93,7 +93,12 @@ export function OtpInput({
                 key={index}
                 index={index}
                 className={cn(
-                  "h-12 w-full rounded-xl border text-base font-semibold text-foreground transition-colors",
+                  // Mesmo fundo/borda dos campos do formulário (`FormField`):
+                  // o cinza do `bg-background` aparece dentro do card branco.
+                  // `first:/last:rounded-l|r-xl` substituem o arredondamento em
+                  // "grupo" da primitiva, mantendo as casas iguais entre si.
+                  "h-12 w-full rounded-xl border bg-background text-base font-semibold text-foreground transition-colors",
+                  "first:rounded-l-xl last:rounded-r-xl",
                   hasError && "border-destructive",
                   !hasError && isValid && "border-brand-green",
                 )}
