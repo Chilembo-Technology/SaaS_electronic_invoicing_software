@@ -34,18 +34,10 @@ export interface UpdateUserDTO {
   [key: string]: unknown;
 }
 
-export interface AuthLoginCredentials {
-  email: string;
-  password?: string;
-  [key: string]: unknown;
-}
-
-export interface AuthLoginResponse {
-  token: string;
-  user: User;
-  token_type?: string;
-  expires_in?: number;
-}
+/**
+ * Nota: os tipos do fluxo de login (credenciais + resposta de OTP + tipo de
+ * sessão) vivem em `features/auth/types/login.ts`, junto do serviço que os usa.
+ */
 
 export interface Company {
   id: string | number;

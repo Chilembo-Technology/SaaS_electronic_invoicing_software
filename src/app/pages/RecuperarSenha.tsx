@@ -3,7 +3,11 @@ import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { authService } from "../../services/authService";
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function RecuperarSenha() {
+  useDocumentTitle("Recuperar senha");
+
   const [email, setEmail] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -1,6 +1,7 @@
 import { Quote, Star } from "lucide-react";
 
 import { SectionHeading } from "../../../components/SectionHeading";
+import { shouldShowDemoNotice, testimonialsNoticeText } from "../utils/demoNotice";
 import { testimonials } from "../utils/testimonialsData";
 
 /** Secção de testemunhos de clientes (avaliações fictícias de demonstração). */
@@ -61,9 +62,11 @@ export function TestimonialsSection() {
           ))}
         </div>
 
-        <p className="mt-8 text-center text-xs text-muted-foreground">
-          Testemunhos fictícios, apresentados para demonstração do produto.
-        </p>
+        {shouldShowDemoNotice ? (
+          <p className="mt-8 text-center text-xs text-muted-foreground">
+            {testimonialsNoticeText}
+          </p>
+        ) : null}
       </div>
     </section>
   );

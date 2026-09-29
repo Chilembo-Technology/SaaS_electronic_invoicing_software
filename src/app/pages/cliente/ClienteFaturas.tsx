@@ -30,7 +30,11 @@ const serieBadge: Record<string, string> = {
   ND: "bg-blue-500/10 text-blue-600",
 };
 
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
 export function ClienteFaturas() {
+  useDocumentTitle("Faturas do cliente");
+
   const [faturas, setFaturas] = useState<Fatura[]>(faturasIniciais);
   const [busca, setBusca] = useState("");
   const [filtroSerie, setFiltroSerie] = useState<string>("Todas");

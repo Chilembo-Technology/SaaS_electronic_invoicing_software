@@ -13,8 +13,10 @@ services:
       - .:/app
       - /app/node_modules
     environment:
-      - VITE_AUTH_API_URL=http://localhost:80/api/v1/auth
-      - VITE_ORGANIZATION_API_URL=http://localhost:80/api/v1/organizations
+      # Raiz relativa: o browser serve a app no mesmo host (nginx :80),
+      # por isso "/api" resolve para o proxy reverso sem CORS.
+      - VITE_AUTH_API_URL=/api
+      - VITE_ORGANIZATION_API_URL=/api
 
   auth_service:
     build:

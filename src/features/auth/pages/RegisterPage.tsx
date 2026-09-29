@@ -1,75 +1,73 @@
-import { useState } from "react";
-import { Link, useSearchParams } from "react-router";
-import { AlertCircle, ArrowRight, Building2, Check, ShieldCheck } from "lucide-react";
+import { useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { Building2 } from "lucide-react";
 
-import { Button } from "../../../app/components/ui/button";
-import { Input } from "../../../app/components/ui/input";
-import { Label } from "../../../app/components/ui/label";
-import { cn } from "../../../app/components/ui/utils";
-import {
-  hasErrors,
-  initialRegisterValues,
-  resolvePlanLabel,
-  validateRegisterForm,
-  type RegisterFormErrors,
-  type RegisterFormValues,
-} from "../utils/registerValidation";
+import { FormAlert } from "../../../components/forms/FormAlert";
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+import { AdminUserStepForm } from "../components/AdminUserStepForm";
+import { CompanyStepForm } from "../components/CompanyStepForm";
+import { RegisterStepper } from "../components/RegisterStepper";
+import { RegisterSuccess } from "../components/RegisterSuccess";
+import { useRegisterForm } from "../hooks/useRegisterForm";
+import { resolvePlanLabel } from "../utils/registerValidation";
+
+/** Tempo (ms) antes do redireccionamento automático para o login. */
+const REDIRECT_DELAY_MS = 5000;
 
 /**
- * Página pública de registo (`/registar`).
+ * Página pública de registo (`/registar`) — cadastro da empresa seguido do
+ * utilizador administrador.
  *
- * ⚠️ Preparada para integração com a API: o `auth_service` ainda NÃO expõe um
- * endpoint de auto-registo, por isso o formulário valida os dados no cliente e
- * confirma o pedido localmente. Quando o endpoint existir, a chamada deve ser
- * feita a partir de um ficheiro em `src/features/auth/services/` (nunca aqui).
+ * ⚠️ Nenhum pedido HTTP é feito aqui: a comunicação vive exclusivamente em
+ * `features/auth/services/registerService.ts` (via `src/lib/api.ts`).
  */
 export function RegisterPage() {
+  useDocumentTitle("Criar conta");
+
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [values, setValues] = useState<RegisterFormValues>({
-    ...initialRegisterValues,
-    plan: searchParams.get("plano") ?? initialRegisterValues.plan,
-  });
-  const [errors, setErrors] = useState<RegisterFormErrors>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [sending, setSending] = useState(false);
 
-  const selectedPlan = resolvePlanLabel(values.plan);
+  // Plano escolhido na Landing Page (`/registar?plano=profissional`).
+  const planParam = searchParams.get("plano");
+  const planLabel = planParam ? resolvePlanLabel(planParam) : null;
 
-  const updateField = <K extends keyof RegisterFormValues>(
-    field: K,
-    value: RegisterFormValues[K],
-  ) => {
-    setValues((current) => ({ ...current, [field]: value }));
-    setErrors((current) => {
-      if (!current[field]) return current;
-      const next = { ...current };
-      delete next[field];
-      return next;
-    });
-  };
+  const {
+    step,
+    companyValues,
+    companyErrors,
+    companyLocked,
+    pendingStep,
+    submitting,
+    succeeded,
+    globalError,
+    userValues,
+    userErrors,
+    setCompanyValue,
+    handleCompanyBlur,
+    isCompanyFieldValid,
+    submitCompany,
+    setUserValue,
+    handleUserBlur,
+    isUserFieldValid,
+    submitAdminUser,
+    goToCompanyStep,
+    goToUserStep,
+    setGlobalError,
+  } = useRegisterForm();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // Depois do sucesso, encaminha para o login (o botão da confirmação antecipa-o).
+  useEffect(() => {
+    if (!succeeded) return;
+    const timer = window.setTimeout(() => navigate("/login", { replace: true }), REDIRECT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [succeeded, navigate]);
 
-    const validationErrors = validateRegisterForm(values);
-    setErrors(validationErrors);
-
-    if (hasErrors(validationErrors)) {
-      return;
-    }
-
-    // TODO(api): integrar com o endpoint de auto-registo do auth_service
-    // (criar `src/features/auth/services/registerService.ts`) e remover a simulação.
-    setSending(true);
-    window.setTimeout(() => {
-      setSending(false);
-      setSubmitted(true);
-    }, 600);
-  };
+  const redirectInSeconds = Math.round(REDIRECT_DELAY_MS / 1000);
+  const companyName = companyValues.companyName.trim();
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-12 sm:px-6">
+      <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-10 sm:px-6 sm:py-14">
         <Link to="/" className="flex items-center" aria-label="Voltar à página inicial">
           <img
             src="/logo_with_name.png"
@@ -82,141 +80,97 @@ export function RegisterPage() {
           Sistema de faturação eletrónica para Angola · Certificado pela AGT
         </p>
 
-        <div className="mt-8 w-full rounded-2xl border border-border bg-card p-7 shadow-sm sm:p-9">
-          {submitted ? (
+        <div className="mt-8 w-full rounded-2xl border border-border bg-card p-6 shadow-sm transition-shadow duration-200 sm:p-9">
+          {succeeded ? (
             <RegisterSuccess
-              companyName={values.companyName}
-              email={values.email}
-              planLabel={selectedPlan}
+              companyName={companyName}
+              email={userValues.email.trim()}
+              planLabel={planLabel}
+              redirectInSeconds={redirectInSeconds}
             />
           ) : (
             <>
-              <div className="flex items-start gap-3 rounded-xl border border-brand-navy/15 bg-brand-navy/5 p-4">
-                <ShieldCheck size={18} className="mt-0.5 shrink-0 text-brand-navy" />
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  Crie a conta da sua empresa no <strong>Fatura Mais</strong>. Cada empresa
-                  recebe um ambiente isolado, com as suas próprias séries de documentos,
-                  utilizadores e permissões.
-                </p>
-              </div>
+              <RegisterStepper currentStep={step} companyStepComplete={companyLocked} />
 
               <h1
-                className="mt-6 text-2xl font-bold text-foreground"
+                className="mt-7 text-2xl font-bold text-foreground"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                Criar conta
+                {step === 1 ? "Criar conta da empresa" : "Utilizador administrador"}
               </h1>
-              <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                <Building2 size={15} className="text-brand-teal" />
-                Plano selecionado:{" "}
-                <strong className="text-foreground">{selectedPlan}</strong>
+
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <Building2 size={15} className="text-brand-teal" aria-hidden="true" />
+                {step === 1
+                  ? "Passo 1 de 2 · dados fiscais e de contacto"
+                  : `Passo 2 de 2 · ${companyName || "empresa"}`}
+                {planLabel ? (
+                  <>
+                    · Plano <strong className="text-foreground">{planLabel}</strong>
+                  </>
+                ) : null}
               </p>
 
-              <form onSubmit={handleSubmit} className="mt-7 space-y-5" noValidate>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <Field
-                    id="companyName"
-                    label="Nome da empresa"
-                    value={values.companyName}
-                    error={errors.companyName}
-                    placeholder="Ex.: Kianda Logística, Lda"
-                    onChange={(value) => updateField("companyName", value)}
-                  />
-                  <Field
-                    id="nif"
-                    label="NIF da empresa"
-                    value={values.nif}
-                    error={errors.nif}
-                    placeholder="10 dígitos"
-                    inputMode="numeric"
-                    maxLength={10}
-                    onChange={(value) => updateField("nif", value.replace(/\D/g, ""))}
-                  />
-                  <Field
-                    id="fullName"
-                    label="Nome do responsável"
-                    value={values.fullName}
-                    error={errors.fullName}
-                    placeholder="Nome completo"
-                    onChange={(value) => updateField("fullName", value)}
-                  />
-                  <Field
-                    id="phone"
-                    label="Telefone"
-                    value={values.phone}
-                    error={errors.phone}
-                    placeholder="923 000 000"
-                    inputMode="tel"
-                    onChange={(value) => updateField("phone", value)}
-                  />
-                  <Field
-                    id="email"
-                    label="Email profissional"
-                    value={values.email}
-                    error={errors.email}
-                    placeholder="nome@empresa.ao"
-                    type="email"
-                    onChange={(value) => updateField("email", value)}
-                  />
-                  <Field
-                    id="password"
-                    label="Senha"
-                    value={values.password}
-                    error={errors.password}
-                    placeholder="Mínimo 8 caracteres"
-                    type="password"
-                    onChange={(value) => updateField("password", value)}
-                  />
-                  <Field
-                    id="confirmPassword"
-                    label="Confirmar senha"
-                    value={values.confirmPassword}
-                    error={errors.confirmPassword}
-                    placeholder="Repita a senha"
-                    type="password"
-                    onChange={(value) => updateField("confirmPassword", value)}
+              {globalError ? (
+                <div className="mt-5">
+                  <FormAlert
+                    variant={globalError.variant}
+                    title={globalError.title}
+                    message={globalError.message}
+                    onDismiss={() => setGlobalError(null)}
                   />
                 </div>
+              ) : null}
 
-                <div>
-                  <label className="flex items-start gap-3 text-sm text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={values.acceptTerms}
-                      onChange={(event) =>
-                        updateField("acceptTerms", event.target.checked)
-                      }
-                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-border accent-[var(--brand-navy)]"
-                    />
-                    <span>
-                      Aceito os Termos e Condições e a Política de Privacidade do Fatura
-                      Mais.
-                    </span>
-                  </label>
-                  {errors.acceptTerms ? (
-                    <ErrorText>{errors.acceptTerms}</ErrorText>
-                  ) : null}
-                </div>
+              <div className="mt-6">
+                {step === 1 ? (
+                  <CompanyStepForm
+                    values={companyValues}
+                    errors={companyErrors}
+                    submitting={pendingStep === 1}
+                    locked={companyLocked}
+                    onSubmit={(event) => {
+                      void submitCompany(event);
+                    }}
+                    onContinue={goToUserStep}
+                    onChange={setCompanyValue}
+                    onBlur={handleCompanyBlur}
+                    isValid={isCompanyFieldValid}
+                  />
+                ) : (
+                  <AdminUserStepForm
+                    values={userValues}
+                    errors={userErrors}
+                    companyName={companyName}
+                    submitting={pendingStep === 2}
+                    onSubmit={(event) => {
+                      void submitAdminUser(event);
+                    }}
+                    onBack={goToCompanyStep}
+                    onChange={setUserValue}
+                    onBlur={handleUserBlur}
+                    isValid={isUserFieldValid}
+                  />
+                )}
+              </div>
 
-                <Button
-                  type="submit"
-                  disabled={sending}
-                  className="h-12 w-full rounded-xl bg-brand-navy text-sm font-semibold text-white hover:bg-brand-navy-dark"
-                >
-                  {sending ? "A enviar pedido…" : "Criar conta"}
-                  {sending ? null : <ArrowRight size={16} />}
-                </Button>
-              </form>
-
-              <p className="mt-6 text-center text-sm text-muted-foreground">
-                Já tem conta?{" "}
-                <Link to="/login" className="font-semibold text-brand-navy hover:underline">
-                  Entrar
-                </Link>
-              </p>
+              {submitting ? (
+                <p className="mt-4 text-center text-xs text-muted-foreground" role="status">
+                  A comunicar com o servidor. Não feche esta página.
+                </p>
+              ) : null}
             </>
           )}
         </div>
+
+        {succeeded ? null : (
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Já tem conta?{" "}
+            <Link to="/login" className="font-semibold text-brand-navy hover:underline">
+              Entrar
+            </Link>
+          </p>
+        )}
 
         <p className="mt-8 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} CHILEMBO TECHNOLOGY · Todos os direitos reservados
@@ -225,111 +179,3 @@ export function RegisterPage() {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/* Subcomponentes de apoio — exclusivos desta página e intencionalmente */
-/* mantidos no mesmo ficheiro por serem muito pequenos.                 */
-/* ------------------------------------------------------------------ */
-
-interface RegisterSuccessProps {
-  companyName: string;
-  email: string;
-  planLabel: string;
-}
-
-function RegisterSuccess({ companyName, email, planLabel }: RegisterSuccessProps) {
-  return (
-    <div className="flex flex-col items-center py-6 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-green/15 text-brand-green">
-        <Check size={26} strokeWidth={3} />
-      </span>
-      <h1
-        className="mt-5 text-2xl font-bold text-foreground"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
-        Pedido de registo recebido
-      </h1>
-      <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-        Obrigado! A nossa equipa vai contactar{" "}
-        <strong className="text-foreground">{email}</strong> em menos de 1 dia útil para
-        ativar a conta de <strong className="text-foreground">{companyName}</strong> no
-        plano <strong className="text-foreground">{planLabel}</strong>.
-      </p>
-      <p className="mt-4 rounded-xl bg-brand-navy/5 px-4 py-3 text-xs text-muted-foreground">
-        Ambiente de demonstração: nenhum dado foi enviado para o servidor.
-      </p>
-      <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-        <Button asChild variant="outline" className="h-11 rounded-xl font-semibold">
-          <Link to="/">Voltar à página inicial</Link>
-        </Button>
-        <Button
-          asChild
-          className="h-11 rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark"
-        >
-          <Link to="/login">
-            Ir para o login
-            <ArrowRight size={16} />
-          </Link>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function ErrorText({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-destructive">
-      <AlertCircle size={13} className="shrink-0" />
-      {children}
-    </p>
-  );
-}
-
-interface FieldProps {
-  id: string;
-  label: string;
-  value: string;
-  error?: string;
-  placeholder?: string;
-  type?: string;
-  inputMode?: "text" | "tel" | "numeric" | "email";
-  maxLength?: number;
-  onChange: (value: string) => void;
-}
-
-function Field({
-  id,
-  label,
-  value,
-  error,
-  placeholder,
-  type = "text",
-  inputMode = "text",
-  maxLength,
-  onChange,
-}: FieldProps) {
-  return (
-    <div>
-      <Label htmlFor={id} className="text-sm font-medium text-foreground">
-        {label}
-      </Label>
-      <Input
-        id={id}
-        name={id}
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        inputMode={inputMode}
-        maxLength={maxLength}
-        aria-invalid={Boolean(error)}
-        onChange={(event) => onChange(event.target.value)}
-        className={cn(
-          "mt-1.5 h-11 rounded-xl bg-background",
-          error && "border-destructive focus-visible:ring-destructive/30",
-        )}
-      />
-      {error ? <ErrorText>{error}</ErrorText> : null}
-    </div>
-  );
-}
-

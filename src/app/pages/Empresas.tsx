@@ -32,7 +32,11 @@ const planoBadge: Record<string, string> = {
   Enterprise: "bg-purple-500/10 text-purple-700 border border-purple-500/20",
 };
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Empresas() {
+  useDocumentTitle("Empresas");
+
   const [empresas, setEmpresas] = useState<Empresa[]>(empresasIniciais);
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<"todos" | "Ativa" | "Suspensa">("todos");

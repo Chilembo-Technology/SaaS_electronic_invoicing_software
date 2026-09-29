@@ -16,7 +16,11 @@ import { TrustBar } from "../components/TrustBar";
  * Composição das secções — cada uma vive no seu próprio componente, para
  * manter os ficheiros pequenos e a responsabilidade única.
  */
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
 export function LandingPage() {
+  useDocumentTitle("Início");
+
   return (
     <div className="landing-scope min-h-screen bg-background">
       <LandingHeader />

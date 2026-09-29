@@ -14,7 +14,11 @@ import {
 
 type Tab = "empresa" | "perfil" | "seguranca" | "notificacoes" | "aparencia";
 
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
 export function ClienteConfiguracoes() {
+  useDocumentTitle("Configurações do cliente");
+
   const [activeTab, setActiveTab] = useState<Tab>("empresa");
   const [saved, setSaved] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

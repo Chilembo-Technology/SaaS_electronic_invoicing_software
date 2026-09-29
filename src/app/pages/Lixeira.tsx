@@ -78,7 +78,11 @@ function ExpiryBadge({ days }: { days: number }) {
   );
 }
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Lixeira() {
+  useDocumentTitle("Lixeira");
+
   const [itens, setItens] = useState<ItemLixeira[]>(lixeiraInicial);
   const [activeTab, setActiveTab] = useState<Categoria>("empresas");
   const [busca, setBusca] = useState("");

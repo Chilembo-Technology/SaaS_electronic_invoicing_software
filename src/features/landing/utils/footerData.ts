@@ -60,7 +60,5 @@ export const socialLinks = [
 export const footerTagline =
   "Software de faturação eletrónica certificado pela AGT, feito em Angola para empresas angolanas.";
 
-export const footerDisclaimer =
-  "Ambiente de demonstração: contacto, morada e dados de clientes são fictícios.";
-
 export const footerCopyright = `© ${new Date().getFullYear()} CHILEMBO TECHNOLOGY · Todos os direitos reservados`;
+

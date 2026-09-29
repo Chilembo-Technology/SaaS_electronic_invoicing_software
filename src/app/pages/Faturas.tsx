@@ -19,7 +19,11 @@ const faturasIniciais: Fatura[] = [
   { id: 5, numero: "FT-2026/005", data: "2026-04-08", cliente: "Tech Solutions Lda", valor: 320000, status: "Emitida" },
 ];
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Faturas() {
+  useDocumentTitle("Faturas");
+
   const [faturas, setFaturas] = useState<Fatura[]>(faturasIniciais);
   const [busca, setBusca] = useState("");
   const [modalAnular, setModalAnular] = useState<number | null>(null);

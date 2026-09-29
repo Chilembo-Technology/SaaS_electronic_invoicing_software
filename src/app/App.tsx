@@ -1,11 +1,14 @@
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
 import { AuthProvider } from "../contexts/AuthContext";
+import { Toaster } from "./components/ui/sonner";
 
 export default function App() {
   return (
     <AuthProvider>
       <RouterProvider router={router} />
+      {/* Notificações globais (sonner) — usadas pelo registo e restante aplicação */}
+      <Toaster position="top-right" richColors closeButton />
     </AuthProvider>
   );
 }

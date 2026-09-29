@@ -34,7 +34,11 @@ const seriesInfo: Record<string, { descricao: string; cor: string }> = {
   "ND-001": { descricao: "Acrescenta valor a uma fatura anterior.", cor: "text-blue-600" },
 };
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function EmitirFatura() {
+  useDocumentTitle("Emitir fatura");
+
   const location = useLocation();
   const isClientePanel = location.pathname.startsWith("/cliente");
   const backHref = isClientePanel ? "/cliente/faturas" : "/faturas";

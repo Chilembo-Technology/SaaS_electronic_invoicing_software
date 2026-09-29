@@ -26,7 +26,11 @@ const fluxoCaixaData = [
   { mes: "Out", previsto: 1050000, realizado: null },
 ];
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Dashboard() {
+  useDocumentTitle("Dashboard");
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
