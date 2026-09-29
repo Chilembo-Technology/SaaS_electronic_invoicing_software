@@ -64,8 +64,24 @@ const attachAuthTokenInterceptor = (config: InternalAxiosRequestConfig): Interna
 authApi.interceptors.request.use(attachAuthTokenInterceptor, (error) => Promise.reject(error));
 orgApi.interceptors.request.use(attachAuthTokenInterceptor, (error) => Promise.reject(error));
 
+/**
+ * Endpoints públicos do fluxo de entrada: um 401 aqui é regra de negócio
+ * (código OTP inválido/expirado, credenciais inválidas) e é tratado pelo próprio
+ * formulário — nunca deve limpar a sessão nem recarregar a página para `/login`.
+ */
+const PUBLIC_AUTH_ENDPOINTS = ['/v1/auth/login', '/v1/auth/verify-otp'];
+
 const handleUnauthorizedInterceptor = (error: unknown) => {
   if (axios.isAxiosError(error) && error.response?.status === 401) {
+    const requestUrl = error.config?.url ?? '';
+    const isPublicAuthEndpoint = PUBLIC_AUTH_ENDPOINTS.some((endpoint) =>
+      requestUrl.includes(endpoint),
+    );
+
+    if (isPublicAuthEndpoint) {
+      return Promise.reject(error);
+    }
+
     removeStoredToken();
     if (window.location.pathname !== '/login') {
       window.location.href = '/login';

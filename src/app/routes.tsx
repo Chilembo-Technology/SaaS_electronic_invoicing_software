@@ -1,5 +1,4 @@
 import { createBrowserRouter } from "react-router";
-import { Login } from "./pages/Login";
 import { RecuperarSenha } from "./pages/RecuperarSenha";
 import { Dashboard } from "./pages/Dashboard";
 import { Clientes } from "./pages/Clientes";
@@ -16,6 +15,8 @@ import { Layout } from "./components/Layout";
 // Páginas públicas (utilizadores NÃO autenticados)
 import { LandingPage } from "../features/landing/pages/LandingPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
+import { LoginPage } from "../features/auth/pages/LoginPage";
+import { VerifyOtpPage } from "../features/auth/pages/VerifyOtpPage";
 
 // Client panel
 import { ClientLayout } from "./components/ClientLayout";
@@ -36,8 +37,13 @@ export const router = createBrowserRouter([
     Component: RegisterPage,
   },
   {
+    // Entrada em duas fases: credenciais (pede o OTP) e validação do código.
     path: "/login",
-    Component: Login,
+    Component: LoginPage,
+  },
+  {
+    path: "/login/verify-otp",
+    Component: VerifyOtpPage,
   },
   {
     path: "/recuperar-senha",

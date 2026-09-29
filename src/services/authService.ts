@@ -1,5 +1,5 @@
 import { authApi } from '../lib/api';
-import { User, AuthLoginCredentials, AuthLoginResponse, CreateUserDTO, UpdateUserDTO } from '../types/api';
+import { User, CreateUserDTO, UpdateUserDTO } from '../types/api';
 
 /**
  * Serviço de autenticação/usuários (auth_service).
@@ -8,23 +8,80 @@ import { User, AuthLoginCredentials, AuthLoginResponse, CreateUserDTO, UpdateUse
  *   - routes/auth/auth_rooter.php -> prefixo `v1/auth`
  *   - routes/user/user_rooter.php -> prefixo `v1/users`
  * Como o cliente HTTP central já aponta para a raiz `/api`, cada pedido começa em `/v1/...`.
+ *
+ * ⚠️ O login (pedido de OTP + validação do código) NÃO vive aqui: está em
+ * `features/auth/services/loginService.ts`, que é o único ponto do fluxo de
+ * entrada que fala HTTP. Aqui ficam apenas a sessão/perfil e a gestão de
+ * utilizadores.
  */
-export const authService = {
-  async login(credentials: AuthLoginCredentials): Promise<AuthLoginResponse> {
-    const response = await authApi.post<AuthLoginResponse>('/v1/auth/login', credentials);
-    const data = response.data;
-    const token = data.token || (data as unknown as { access_token?: string }).access_token || '';
-    return {
-      token,
-      user: data.user,
-      token_type: data.token_type,
-      expires_in: data.expires_in,
-    };
-  },
 
+/** Recurso devolvido pelo `UserListResource` do auth_service. */
+export interface UserResource {
+  id?: string | number;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  phone_number?: string | null;
+  bi_number?: string | null;
+  path_photo?: string | null;
+  status?: string | null;
+  company_id?: string | null;
+  email_verified_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  roles?: string[] | null;
+  permissions?: string[] | null;
+}
+
+/** Envelope padrão das respostas do auth_service: `{ success, message, data }`. */
+interface ResourceEnvelope<T> {
+  success?: boolean;
+  message?: string;
+  data?: T;
+}
+
+/**
+ * Converte o recurso do backend no `User` usado pela aplicação.
+ *
+ * O `UserListResource` devolve `first_name`/`last_name`/`roles[]`, mas o resto da
+ * aplicação (ex.: `Layout`) lê `name`/`role`/`perfil` — o mapeamento acontece
+ * aqui, num único sítio.
+ */
+export function toUser(resource: UserResource | null | undefined): User {
+  const firstName = (resource?.first_name ?? '').trim();
+  const lastName = (resource?.last_name ?? '').trim();
+  const email = (resource?.email ?? '').trim();
+  const roles = (resource?.roles ?? []).filter(Boolean);
+  const permissions = (resource?.permissions ?? []).filter(Boolean);
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  return {
+    id: resource?.id ?? '',
+    name: fullName || email || 'Utilizador',
+    email,
+    role: roles[0],
+    perfil: roles[0],
+    status: resource?.status ?? undefined,
+    ativo: resource?.status === 'active',
+    avatar: resource?.path_photo ?? undefined,
+    createdAt: resource?.created_at ?? undefined,
+    updatedAt: resource?.updated_at ?? undefined,
+    company_id: resource?.company_id ?? undefined,
+    first_name: firstName,
+    last_name: lastName,
+    phone_number: resource?.phone_number ?? undefined,
+    roles,
+    permissions,
+  };
+}
+
+export const authService = {
   async getProfile(): Promise<User> {
-    const response = await authApi.get<User>('/v1/auth/me');
-    return response.data;
+    // `GET /v1/auth/me` responde com o envelope `{ success, message, data }`.
+    const response = await authApi.get<ResourceEnvelope<UserResource> | UserResource>('/v1/auth/me');
+    const body = response.data as ResourceEnvelope<UserResource>;
+
+    return toUser(body?.data ?? (response.data as UserResource));
   },
 
   async logout(): Promise<void> {

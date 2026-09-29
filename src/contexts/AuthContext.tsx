@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthLoginCredentials } from '../types/api';
+import { User } from '../types/api';
 import { authService } from '../services/authService';
 import { getStoredToken, setStoredToken, removeStoredToken } from '../lib/api';
 
@@ -7,7 +7,12 @@ interface AuthContextData {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: AuthLoginCredentials) => Promise<void>;
+  /**
+   * Guarda a sessão devolvida por `POST /v1/auth/verify-otp` (token JWT +
+   * utilizador). O pedido do OTP e a sua validação vivem em
+   * `features/auth/services/loginService.ts`.
+   */
+  login: (token: string, user: User) => void;
   logout: () => void;
 }
 
@@ -41,21 +46,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loadStorageData();
   }, []);
 
-  const login = async (credentials: AuthLoginCredentials): Promise<void> => {
-    const response = await authService.login(credentials);
-    if (response.token) {
-      setStoredToken(response.token);
-    }
-    if (response.user) {
-      setUser(response.user);
-    } else {
-      try {
-        const userData = await authService.getProfile();
-        setUser(userData);
-      } catch {
-        setUser(null);
-      }
-    }
+  /**
+   * Guarda a sessão autenticada: o token JWT fica no `localStorage` (para o
+   * interceptor do cliente HTTP o reenviar) e o utilizador em memória.
+   * É chamado pela `VerifyOtpPage` depois do `/verify-otp` ser aceite.
+   */
+  const login = (token: string, user: User): void => {
+    setStoredToken(token);
+    setUser(user);
   };
 
   const logout = (): void => {

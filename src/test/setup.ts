@@ -54,3 +54,12 @@ if (typeof Element.prototype.scrollIntoView !== "function") {
   });
 }
 
+// O jsdom não implementa elementFromPoint — consultado pela primitiva `input-otp`
+// (campo do código OTP) para detectar o elemento sob o cursor/clique.
+if (typeof document.elementFromPoint !== "function") {
+  Object.defineProperty(document, "elementFromPoint", {
+    value: () => null,
+    writable: true,
+  });
+}
+
