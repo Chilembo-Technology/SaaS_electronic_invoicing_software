@@ -4,10 +4,10 @@ import {
   contactInfo,
   footerColumns,
   footerCopyright,
-  footerDisclaimer,
   footerTagline,
   socialLinks,
 } from "../utils/footerData";
+import { demoNoticeText, shouldShowDemoNotice } from "../utils/demoNotice";
 
 /** Footer público da Landing: links úteis, contactos e informação legal. */
 export function LandingFooter() {
@@ -107,7 +107,9 @@ export function LandingFooter() {
         {/* Barra inferior */}
         <div className="mt-12 flex flex-col gap-3 border-t border-white/15 pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-white/70">{footerCopyright}</p>
-          <p className="text-xs text-white/60">{footerDisclaimer}</p>
+          {shouldShowDemoNotice ? (
+            <p className="text-[11px] text-white/45">{demoNoticeText}</p>
+          ) : null}
         </div>
       </div>
     </footer>

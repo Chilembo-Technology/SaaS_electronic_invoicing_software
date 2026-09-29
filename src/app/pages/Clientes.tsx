@@ -17,7 +17,11 @@ const clientesIniciais: Cliente[] = [
   { id: 4, nome: "Global Import & Export", nif: "5000987654", tipo: "Empresarial", telefone: "+244 923 555 666", email: "info@globalimport.ao" },
 ];
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Clientes() {
+  useDocumentTitle("Clientes");
+
   const [clientes, setClientes] = useState<Cliente[]>(clientesIniciais);
   const [modalAberto, setModalAberto] = useState(false);
   const [busca, setBusca] = useState("");

@@ -43,7 +43,11 @@ const perfilConfig = {
   },
 };
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Usuarios() {
+  useDocumentTitle("Usuários");
+
   const [usuarios, setUsuarios] = useState<Usuario[]>(usuariosIniciais);
   const [busca, setBusca] = useState("");
   const [filtroAtivo, setFiltroAtivo] = useState<"todos" | "ativos" | "inativos">("todos");

@@ -79,7 +79,11 @@ const faturasUsadas = 184;
 const limiteAtual = 500;
 const usoPct = (faturasUsadas / limiteAtual) * 100;
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Planos() {
+  useDocumentTitle("Planos");
+
   const [anual, setAnual] = useState(false);
 
   return (

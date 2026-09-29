@@ -90,7 +90,11 @@ const seriesIniciais = [
   { prefixo: "ND", nome: "Nota de Débito", sequencia: 0, ativa: false },
 ];
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Configuracoes() {
+  useDocumentTitle("Configurações");
+
   const [corPrimaria, setCorPrimaria] = useState("#2563EB");
   const [template, setTemplate] = useState("moderno");
   const [cabecalho, setCabecalho] = useState("");

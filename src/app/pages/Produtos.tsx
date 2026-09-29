@@ -24,7 +24,11 @@ const taxasIVA = [
   { valor: 21.5, label: "21,5%" },
 ];
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Produtos() {
+  useDocumentTitle("Produtos");
+
   const [produtos, setProdutos] = useState<Produto[]>(produtosIniciais);
   const [modalAberto, setModalAberto] = useState(false);
   const [busca, setBusca] = useState("");

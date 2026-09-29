@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Login() {
+  useDocumentTitle("Entrar");
+
   const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState("");

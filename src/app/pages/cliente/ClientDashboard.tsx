@@ -39,7 +39,11 @@ const ultimasFaturas = [
   { numero: "FT-2026/038", cliente: "Ana Maria Pereira", valor: 38000, data: "2026-06-12", status: "Emitida" },
 ];
 
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
 export function ClientDashboard() {
+  useDocumentTitle("Painel do cliente");
+
   return (
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}

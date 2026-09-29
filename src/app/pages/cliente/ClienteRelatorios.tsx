@@ -28,7 +28,11 @@ const ivaData = [
   { mes: "Jun", iva: 176300, retencao: 53550 },
 ];
 
+import { useDocumentTitle } from "../../../hooks/useDocumentTitle";
+
 export function ClienteRelatorios() {
+  useDocumentTitle("Relatórios do cliente");
+
   const [periodoInicio, setPeriodoInicio] = useState("");
   const [periodoFim, setPeriodoFim] = useState("");
 

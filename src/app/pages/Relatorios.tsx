@@ -1,6 +1,10 @@
 import { FileText, Download, Calendar, Users, DollarSign, TrendingUp } from "lucide-react";
 
+import { useDocumentTitle } from "../../hooks/useDocumentTitle";
+
 export function Relatorios() {
+  useDocumentTitle("Relatórios");
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <div>
