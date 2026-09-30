@@ -25,6 +25,8 @@ export const LOGIN_API_MESSAGES = {
   /** Pedido de OTP perdido (link aberto directamente, aba recarregada, etc.). */
   pendingMissing:
     'Não há nenhum código em curso. Introduza novamente as suas credenciais para receber um novo código.',
+  /** Falha de rede/500 no reenvio do código (`POST /v1/otp/generate`). */
+  resendFailed: 'Não foi possível reenviar o código. Tente novamente dentro de instantes.',
 } as const;
 
 interface LaravelLoginBody {

@@ -7,9 +7,9 @@ import type { PendingLogin, RequestOtpPayload } from '../types/login';
  * email e a expiração do código são gravados em `sessionStorage` — sobrevivem a
  * um refresh da página sem ficarem no `localStorage` depois de fechar o browser.
  *
- * ⚠️ A password NUNCA é persistida: fica apenas em memória do módulo, para
- * permitir "Reenviar código" (que volta a chamar `/login`) enquanto a página não
- * for recarregada. Sem credenciais em memória, o formulário pede-as de novo.
+ * ⚠️ A password NUNCA é persistida: fica apenas em memória do módulo. O "Reenviar
+ * código" já não depende dela (usa `POST /v1/otp/generate` só com o email), por
+ * isso um refresh da página continua a permitir reenviar o código.
  */
 
 const PENDING_EMAIL_KEY = '@Chilembo:pending-login-email';

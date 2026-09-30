@@ -68,8 +68,11 @@ orgApi.interceptors.request.use(attachAuthTokenInterceptor, (error) => Promise.r
  * Endpoints públicos do fluxo de entrada: um 401 aqui é regra de negócio
  * (código OTP inválido/expirado, credenciais inválidas) e é tratado pelo próprio
  * formulário — nunca deve limpar a sessão nem recarregar a página para `/login`.
+ *
+ * `/v1/otp/generate` (reenvio do código) é igualmente público no auth_service,
+ * pelo que um 401 inesperado aí também não pode expulsar o utilizador.
  */
-const PUBLIC_AUTH_ENDPOINTS = ['/v1/auth/login', '/v1/auth/verify-otp'];
+const PUBLIC_AUTH_ENDPOINTS = ['/v1/auth/login', '/v1/auth/verify-otp', '/v1/otp/generate'];
 
 const handleUnauthorizedInterceptor = (error: unknown) => {
   if (axios.isAxiosError(error) && error.response?.status === 401) {

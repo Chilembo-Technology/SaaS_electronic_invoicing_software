@@ -8,19 +8,21 @@ import { MemoryRouter, Route, Routes } from "react-router";
  * de OTP em curso. Serviço, toasts e contexto estão substituídos por espiões.
  */
 
-const { serviceMocks, toastMocks, authMocks } = vi.hoisted(() => ({
+const { serviceMocks, otpMocks, toastMocks, authMocks } = vi.hoisted(() => ({
   serviceMocks: { requestOtp: vi.fn(), verifyOtp: vi.fn() },
+  otpMocks: { resendOtp: vi.fn() },
   toastMocks: { success: vi.fn(), error: vi.fn() },
   authMocks: { user: null, isAuthenticated: false, isLoading: false, login: vi.fn(), logout: vi.fn() },
 }));
 
 vi.mock("../services/loginService", () => ({ loginService: serviceMocks }));
+vi.mock("../services/otpService", () => ({ otpService: otpMocks }));
 vi.mock("sonner", () => ({ toast: toastMocks }));
 vi.mock("../../../contexts/AuthContext", () => ({ useAuth: () => authMocks }));
 
 import { VerifyOtpPage } from "./VerifyOtpPage";
 import { toLoginApiError } from "../utils/loginApiError";
-import { httpError } from "../../../test/helpers";
+import { httpError, validationErrorBody } from "../../../test/helpers";
 import { clearPendingLogin, savePendingLogin } from "../utils/otpSession";
 import type { AuthenticatedSession } from "../types/login";
 
@@ -133,9 +135,9 @@ describe("VerifyOtpPage — validação e sessão", () => {
     expect(authMocks.login).not.toHaveBeenCalled();
   });
 
-  it("reenvia o código com as credenciais guardadas em memória", async () => {
+  it("reenvia o código em /v1/otp/generate apenas com o email do pedido em curso", async () => {
     startPendingLogin();
-    serviceMocks.requestOtp.mockResolvedValueOnce({
+    otpMocks.resendOtp.mockResolvedValueOnce({
       message: "Código OTP gerado e enviado ao seu email",
       expiresAt: "2026-09-29 10:45:00",
       otpId: "otp-2",
@@ -144,20 +146,80 @@ describe("VerifyOtpPage — validação e sessão", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Reenviar código/ }));
 
-    expect(await screen.findByText(/O código é válido até às/)).toBeInTheDocument();
-    expect(serviceMocks.requestOtp).toHaveBeenCalledWith({
-      email: "ana@kianda.ao",
-      password: "segredo123",
-    });
+    // A validade mostrada passa a ser a do código mais recente.
+    expect(await screen.findByText(/O código é válido até às 10:45/)).toBeInTheDocument();
+    expect(otpMocks.resendOtp).toHaveBeenCalledWith("ana@kianda.ao");
+    // O passo 1 já não é usado para reenviar (não exige password).
+    expect(serviceMocks.requestOtp).not.toHaveBeenCalled();
     expect(toastMocks.success).toHaveBeenCalledWith("Novo código enviado", expect.anything());
+    // Cooldown: evita reenvios em rajada depois do sucesso.
+    expect(screen.getByRole("button", { name: /Reenviar em 30s/ })).toBeDisabled();
+    expect(
+      screen.getByText(/Pode pedir um novo código dentro de 30 segundos/),
+    ).toBeInTheDocument();
   });
 
-  it("desactiva o reenvio quando as credenciais se perderam (página recarregada)", async () => {
-    // Simula uma recarga: o email sobrevive em sessionStorage, as credenciais não.
+  it("mantém o reenvio disponível depois de recarregar a página (email em sessionStorage)", async () => {
+    // Simula uma recarga: o email sobrevive em sessionStorage — a password não é precisa.
     sessionStorage.setItem("@Chilembo:pending-login-email", "ana@kianda.ao");
+    otpMocks.resendOtp.mockResolvedValueOnce({
+      message: "Código OTP gerado e enviado ao seu email",
+      expiresAt: null,
+      otpId: "otp-2",
+    });
     renderPage();
 
-    expect(screen.getByRole("button", { name: /Reenviar código/ })).toBeDisabled();
-    expect(screen.getByText(/O reenvio exige a introdução das credenciais/)).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: /Reenviar código/ });
+    expect(button).toBeEnabled();
+
+    fireEvent.click(button);
+
+    // Espera o fim do pedido (o estado do hook) para não haver updates fora do act().
+    expect(await screen.findByRole("button", { name: /Reenviar em 30s/ })).toBeDisabled();
+    expect(otpMocks.resendOtp).toHaveBeenCalledWith("ana@kianda.ao");
+  });
+
+  it("mostra o 422 do reenvio no banner, sem escrever no campo do código", async () => {
+    startPendingLogin();
+    otpMocks.resendOtp.mockRejectedValueOnce(
+      toLoginApiError(httpError(422, validationErrorBody({ email: ["O email não existe."] }))),
+    );
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: /Reenviar código/ }));
+
+    expect(await screen.findAllByText("O email não existe.")).toHaveLength(1);
+    expect(screen.getByText("Não foi possível reenviar o código")).toBeInTheDocument();
+    // O código não foi rejeitado — o erro do reenvio não vai para o campo (só o banner).
+    expect(toastMocks.error).not.toHaveBeenCalled();
+  });
+
+  it("avisa o tempo de espera quando o reenvio é limitado (429)", async () => {
+    startPendingLogin();
+    otpMocks.resendOtp.mockRejectedValueOnce(
+      toLoginApiError(httpError(429, { message: "Too Many Attempts.", retry_after: 90 })),
+    );
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: /Reenviar código/ }));
+
+    expect(await screen.findByText("Demasiadas tentativas")).toBeInTheDocument();
+    expect(screen.getByText(/Tente novamente em 2 minutos\./)).toBeInTheDocument();
+    expect(toastMocks.error).toHaveBeenCalledWith("Too Many Attempts.");
+  });
+
+  it("avisa quando o reenvio falha por servidor (500)", async () => {
+    startPendingLogin();
+    otpMocks.resendOtp.mockRejectedValueOnce(
+      toLoginApiError(httpError(500, { message: "Server Error" })),
+    );
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: /Reenviar código/ }));
+
+    expect(await screen.findByText("Não foi possível reenviar o código")).toBeInTheDocument();
+    expect(toastMocks.error).toHaveBeenCalledWith(
+      "Não foi possível reenviar o código. Tente novamente dentro de instantes.",
+    );
   });
 });

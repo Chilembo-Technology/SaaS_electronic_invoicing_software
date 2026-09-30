@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import type {
@@ -30,16 +30,23 @@ import {
   type LoginApiError,
 } from "../utils/loginApiError";
 import { loginService } from "../services/loginService";
+import { otpService } from "../services/otpService";
 import {
   clearPendingLogin,
-  getRememberedCredentials,
   readPendingLogin,
   updatePendingExpiry,
 } from "../utils/otpSession";
 
 /**
+ * Segundos de espera antes de permitir um novo reenvio — evita rajadas de
+ * pedidos (e de emails) depois de um clique repetido.
+ */
+export const RESEND_COOLDOWN_SECONDS = 30;
+
+/**
  * Orquestra o passo 2 do login: validação do código OTP e criação da sessão
- * (`POST /v1/auth/verify-otp`, via `loginService`).
+ * (`POST /v1/auth/verify-otp`, via `loginService`) e reenvio do código
+ * (`POST /v1/otp/generate`, via `otpService`).
  *
  * O `email` vem do pedido de OTP anterior (`otpSession`) — o `AuthVerifyOTPRequest`
  * volta a exigi-lo. O 401/404 do backend é um erro do próprio código, por isso é
@@ -53,15 +60,26 @@ export function useVerifyOtp() {
   const [touched, setTouched] = useState<TouchedMap<VerifyOtpField>>({});
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
+  /** Segundos que faltam para poder voltar a reenviar (0 = disponível). */
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [globalError, setGlobalError] = useState<AuthGlobalError | null>(null);
+
+  /** Desconta o cooldown de reenvio de segundo a segundo (pára no zero). */
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+
+    const timer = window.setTimeout(() => setResendCooldown((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
 
   /** Só um código completo (9 dígitos) pode ser submetido. */
   const canSubmit = isOtpComplete(values.code);
   /**
-   * Reenviar exige as credenciais do passo 1. Elas vivem apenas em memória:
-   * depois de um refresh da página é preciso voltar a introduzi-las.
+   * Reenviar só precisa do `email` do pedido em curso (`sessionStorage`), por
+   * isso continua disponível depois de um refresh da página — mas nunca durante
+   * o cooldown nem sem pedido de OTP em curso.
    */
-  const canResend = getRememberedCredentials() !== null;
+  const canResend = pending !== null && resendCooldown === 0;
 
   const setCode = (value: string) => {
     const nextValues = { code: sanitizeOtpCode(value) };
@@ -128,6 +146,41 @@ export function useVerifyOtp() {
   };
 
   /**
+   * Falha do REENVIO (`POST /v1/otp/generate`).
+   *
+   * Não reutiliza o `applyApiError` de propósito: ali um 401/404 é o código
+   * rejeitado e é escrito no campo `code`. Aqui a única chave possível é `email`
+   * (`GenerateOTPRequest`), que não tem campo no formulário — o 422 vai para o
+   * banner com o texto do backend (ex.: «O email não existe.»).
+   */
+  const applyResendApiError = (normalized: LoginApiError) => {
+    const fieldMessage = Object.values(normalized.fieldErrors)[0];
+    const wait = normalized.retryAfterSeconds
+      ? ` Tente novamente em ${formatRetryAfter(normalized.retryAfterSeconds)}.`
+      : "";
+    const message = normalized.isValidationError
+      ? fieldMessage ?? API_ERROR_MESSAGES.validation
+      : `${normalized.message}${wait}`;
+
+    setGlobalError({
+      variant: normalized.status === 429 ? "warning" : "error",
+      title:
+        normalized.status === 429
+          ? "Demasiadas tentativas"
+          : "Não foi possível reenviar o código",
+      message,
+    });
+
+    if (isGlobalFailure(normalized)) {
+      // 429 traz uma mensagem útil do backend; nas falhas de rede/5xx o toast
+      // fala do reenvio (e não da "operação" genérica do `LOGIN_API_MESSAGES.server`).
+      toast.error(
+        normalized.status === 429 ? normalized.message : LOGIN_API_MESSAGES.resendFailed,
+      );
+    }
+  };
+
+  /**
    * Valida o código introduzido.
    * @returns a sessão autenticada (token + utilizador) ou `null` em caso de falha.
    */
@@ -181,14 +234,16 @@ export function useVerifyOtp() {
   };
 
   /**
-   * Reenvia o código: volta a chamar `/login` com as credenciais guardadas em
-   * memória (o backend não tem endpoint de reenvio próprio).
+   * Reenvia o código através do endpoint próprio do auth_service
+   * (`POST /v1/otp/generate`), que só precisa do `email` do pedido em curso —
+   * as credenciais do passo 1 já não são necessárias (nem guardadas em disco).
+   *
+   * @returns `true` quando o backend confirmou o envio do novo código.
    */
   const resend = async (): Promise<boolean> => {
-    if (resending || submitting) return false;
+    if (resending || submitting || resendCooldown > 0) return false;
 
-    const credentials = getRememberedCredentials();
-    if (!credentials) {
+    if (!pending) {
       setGlobalError({
         variant: "info",
         title: "Reenvio indisponível",
@@ -200,12 +255,14 @@ export function useVerifyOtp() {
     setResending(true);
 
     try {
-      const result = await loginService.requestOtp(credentials);
+      const result = await otpService.resendOtp(pending.email);
       updatePendingExpiry(result.expiresAt);
-      setPending({ email: credentials.email, expiresAt: result.expiresAt });
+      setPending({ email: pending.email, expiresAt: result.expiresAt });
       setValues(emptyVerifyOtpValues);
       setErrors({});
       setGlobalError(null);
+      // Bloqueia o botão durante alguns segundos para evitar pedidos em rajada.
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
 
       toast.success("Novo código enviado", {
         description: "Verifique o seu email e introduza o código de 9 dígitos.",
@@ -213,7 +270,7 @@ export function useVerifyOtp() {
 
       return true;
     } catch (error) {
-      applyApiError(isLoginApiError(error) ? error : toLoginApiError(error));
+      applyResendApiError(isLoginApiError(error) ? error : toLoginApiError(error));
       return false;
     } finally {
       setResending(false);
@@ -230,6 +287,7 @@ export function useVerifyOtp() {
     resending,
     canSubmit,
     canResend,
+    resendCooldown,
     globalError,
     // ações
     setCode,
