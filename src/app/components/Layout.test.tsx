@@ -92,4 +92,10 @@ describe('Layout — botão "Sair da Conta"', () => {
 
     expect(authMocks.logout).toHaveBeenCalledTimes(1);
   });
+
+  it('tem o link "Início" para a página pública', () => {
+    renderLayout();
+
+    expect(screen.getAllByRole("link", { name: "Início" })[0]).toHaveAttribute("href", "/");
+  });
 });

@@ -8,6 +8,7 @@ import {
   Settings,
   Building2,
   CreditCard,
+  Home,
   LogOut,
   Loader2,
   Menu,
@@ -18,6 +19,8 @@ import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const navigation = [
+  // Link para a página inicial pública — visível também com sessão iniciada.
+  { name: "Início", href: "/", icon: Home },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Clientes", href: "/clientes", icon: Users },
   { name: "Produtos", href: "/produtos", icon: Package },
@@ -39,6 +42,10 @@ export function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
+    // `startsWith("/")` daria sempre verdadeiro em "/" — comparação exacta.
+    if (href === "/") {
+      return location.pathname === "/";
+    }
     if (href === "/dashboard") {
       return location.pathname === "/dashboard";
     }
