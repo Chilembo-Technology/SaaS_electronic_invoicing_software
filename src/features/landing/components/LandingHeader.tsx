@@ -16,13 +16,13 @@ const navigationLinks = [
 
 interface LandingHeaderProps {
   /**
-   * Esconde o perfil (role), o botão de saída e o CTA "Ir para o Painel", com
-   * uma transição suave (~200ms).
+   * Esconde o nome, o perfil (role), o botão de saída e o CTA "Ir para o
+   * Painel", com uma transição suave (~200ms) — fica apenas o avatar.
    *
    * A página inicial liga-o enquanto a faixa "Sessão iniciada" (Zona 2) está
-   * dentro do ecrã: nesse momento essas acções já estão visíveis no conteúdo,
-   * pelo que a navbar não as duplica. Quando a faixa sai do ecrã, a navbar
-   * volta a mostrá-las.
+   * dentro do ecrã: nesse momento o nome e essas acções já estão visíveis no
+   * conteúdo, pelo que a navbar não as duplica. Quando a faixa sai do ecrã, a
+   * navbar volta a mostrá-las.
    *
    * Nada é removido do DOM (as acções ficam esbatidas/colapsadas e fora da
    * árvore de acessibilidade), para a transição poder ser animada. Por omissão
@@ -42,8 +42,9 @@ interface LandingHeaderProps {
  * O link "Início" (`/`) está sempre visível, em ambos os estados.
  *
  * Reage também ao scroll (via `hideAccountActions`): enquanto a secção
- * "Sessão iniciada" está no ecrã, o avatar e o nome continuam visíveis, mas o
- * perfil, a saída e "Ir para o Painel" escondem-se — ver `LandingPage`.
+ * "Sessão iniciada" está no ecrã, só o avatar permanece visível — o nome, o
+ * perfil, a saída e "Ir para o Painel" escondem-se, porque a faixa já os
+ * mostra. Quando a faixa sai do ecrã, a navbar recupera tudo — ver `LandingPage`.
  */
 export function LandingHeader({ hideAccountActions = false }: LandingHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

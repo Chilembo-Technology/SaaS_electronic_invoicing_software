@@ -76,6 +76,16 @@ describe("UserMenu", () => {
     expect(onLogoutConfirmed).toHaveBeenCalledTimes(1);
   });
 
+  it("esconde o nome, o perfil e a saída quando `hideActions` está ligado (fica o avatar)", () => {
+    render(<UserMenu hideActions />);
+
+    expect(screen.getByText("AS")).toBeInTheDocument();
+    expect(screen.getByText("AS")).not.toHaveAttribute("aria-hidden");
+    expect(screen.getByText("Ana Silva")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("Administrador")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByTitle("Sair da Conta")).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("pode ser usado sem a identidade (apenas o botão de saída)", () => {
     render(<UserMenu logoutLabel="Sair da conta" showIdentity={false} />);
 

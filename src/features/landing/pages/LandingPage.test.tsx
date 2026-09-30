@@ -43,6 +43,7 @@ const renderPage = () =>
 
 /** Acções que a navbar só mostra quando a faixa "Sessão iniciada" sai do ecrã. */
 const navbarActions = () => ({
+  name: screen.getAllByText("Super Admin")[0],
   role: screen.getAllByText("super-admin")[0],
   logout: screen.getAllByTitle("Sair da Conta")[0],
   panel: screen.getAllByText("Ir para o Painel")[0].closest("a") as HTMLAnchorElement,
@@ -61,16 +62,17 @@ describe("LandingPage — navbar e scroll", () => {
     expect(lastIntersectionObserver()?.elements[0]?.tagName).toBe("SECTION");
   });
 
-  it("com a faixa no ecrã, a navbar esconde perfil, saída e painel", () => {
+  it("com a faixa no ecrã, a navbar fica só com o avatar", () => {
     renderPage();
 
+    expect(navbarActions().name).toHaveAttribute("aria-hidden", "true");
     expect(navbarActions().role).toHaveAttribute("aria-hidden", "true");
     expect(navbarActions().logout).toHaveAttribute("aria-hidden", "true");
     expect(navbarActions().panel).toHaveAttribute("aria-hidden", "true");
 
-    // O avatar, o nome e os links da navbar mantêm-se intactos.
+    // O avatar e os links da navbar mantêm-se intactos.
     expect(screen.getAllByText("SA")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("Super Admin")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("SA")[0]).not.toHaveAttribute("aria-hidden");
     expect(screen.getAllByRole("link", { name: "Início" })[0]).not.toHaveAttribute("aria-hidden");
   });
 
@@ -79,6 +81,7 @@ describe("LandingPage — navbar e scroll", () => {
 
     act(() => lastIntersectionObserver()?.triggerVisibility(false));
 
+    expect(navbarActions().name).not.toHaveAttribute("aria-hidden");
     expect(navbarActions().role).not.toHaveAttribute("aria-hidden");
     expect(navbarActions().logout).not.toHaveAttribute("aria-hidden");
     expect(navbarActions().panel).not.toHaveAttribute("aria-hidden");
@@ -90,6 +93,7 @@ describe("LandingPage — navbar e scroll", () => {
     act(() => lastIntersectionObserver()?.triggerVisibility(false));
     act(() => lastIntersectionObserver()?.triggerVisibility(true));
 
+    expect(navbarActions().name).toHaveAttribute("aria-hidden", "true");
     expect(navbarActions().logout).toHaveAttribute("aria-hidden", "true");
   });
 
