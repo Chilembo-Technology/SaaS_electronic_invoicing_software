@@ -84,6 +84,8 @@ export default defineConfig(({ mode }) => {
         : {
             '/api/v1/auth': proxyTo(authTarget),
             '/api/v1/users': proxyTo(authTarget),
+            // Reenvio do código OTP (`routes/otp/otp_rooter.php`) — vive no auth_service.
+            '/api/v1/otp': proxyTo(authTarget),
             '/api/v1/company': proxyTo(organizationTarget),
             '/api/v1/organizations': proxyTo(organizationTarget),
             // Serviços ainda sem porta publicada no host (customer, product,

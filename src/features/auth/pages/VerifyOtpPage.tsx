@@ -1,5 +1,5 @@
 import { useEffect, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { ArrowLeft, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +28,9 @@ function formatExpiry(expiresAt: string | null): string | null {
  * Recebe o `email` do passo anterior (`utils/otpSession.ts`), valida o código em
  * `POST /v1/auth/verify-otp` e, com o token devolvido, grava a sessão no
  * `AuthContext` antes de seguir para o painel.
+ *
+ * O "Reenviar código" usa `POST /v1/otp/generate` (via `otpService`) e só precisa
+ * do email — as credenciais do passo 1 deixaram de ser necessárias para reenviar.
  */
 export function VerifyOtpPage() {
   useDocumentTitle("Verificação OTP");
@@ -43,6 +46,7 @@ export function VerifyOtpPage() {
     resending,
     canSubmit,
     canResend,
+    resendCooldown,
     globalError,
     setCode,
     handleBlur,
@@ -146,6 +150,9 @@ export function VerifyOtpPage() {
                 <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                 A reenviar…
               </>
+            ) : resendCooldown > 0 ? (
+              // Cooldown do reenvio: o botão reabre sozinho no fim da contagem.
+              `Reenviar em ${resendCooldown}s`
             ) : (
               <>
                 <RefreshCw size={16} aria-hidden="true" />
@@ -166,12 +173,10 @@ export function VerifyOtpPage() {
           </Button>
         </div>
 
-        {!canResend ? (
+        {resendCooldown > 0 ? (
           <p className="text-center text-xs text-muted-foreground">
-            O reenvio exige a introdução das credenciais novamente.{" "}
-            <Link to="/login" className="font-semibold text-brand-navy hover:underline">
-              Voltar ao login
-            </Link>
+            Pode pedir um novo código dentro de {resendCooldown}{" "}
+            {resendCooldown === 1 ? "segundo" : "segundos"}.
           </p>
         ) : null}
       </form>
