@@ -4,6 +4,7 @@ import { Link } from "react-router";
 
 import { Button } from "../../../app/components/ui/button";
 import { cn } from "../../../app/components/ui/utils";
+import { UserMenu } from "../../../components/UserMenu";
 import { useAuth } from "../../../contexts/AuthContext";
 
 const navigationLinks = [
@@ -13,11 +14,39 @@ const navigationLinks = [
   { name: "FAQ", href: "#faq" },
 ];
 
+interface LandingHeaderProps {
+  /**
+   * Esconde o nome, o perfil (role), o botão de saída e o CTA "Ir para o
+   * Painel", com uma transição suave (~200ms) — fica apenas o avatar.
+   *
+   * A página inicial liga-o enquanto a faixa "Sessão iniciada" (Zona 2) está
+   * dentro do ecrã: nesse momento o nome e essas acções já estão visíveis no
+   * conteúdo, pelo que a navbar não as duplica. Quando a faixa sai do ecrã, a
+   * navbar volta a mostrá-las.
+   *
+   * Nada é removido do DOM (as acções ficam esbatidas/colapsadas e fora da
+   * árvore de acessibilidade), para a transição poder ser animada. Por omissão
+   * é `false` — a navbar mostra tudo.
+   */
+  hideAccountActions?: boolean;
+}
+
 /**
  * Header público da Landing: logótipo, navegação por âncoras e ações de conta.
- * Se o utilizador já estiver autenticado, o CTA passa a "Ir para o Painel".
+ *
+ * Reage à sessão:
+ *   - deslogado — "Entrar" (`/login`) e "Registar" (`/registar`);
+ *   - logado — `UserMenu` (iniciais + nome, tal como na sidebar, e "Sair da
+ *     conta") e o CTA "Ir para o Painel" (`/dashboard`).
+ *
+ * O link "Início" (`/`) está sempre visível, em ambos os estados.
+ *
+ * Reage também ao scroll (via `hideAccountActions`): enquanto a secção
+ * "Sessão iniciada" está no ecrã, só o avatar permanece visível — o nome, o
+ * perfil, a saída e "Ir para o Painel" escondem-se, porque a faixa já os
+ * mostra. Quando a faixa sai do ecrã, a navbar recupera tudo — ver `LandingPage`.
  */
-export function LandingHeader() {
+export function LandingHeader({ hideAccountActions = false }: LandingHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated } = useAuth();
 
@@ -37,6 +66,14 @@ export function LandingHeader() {
 
         {/* Navegação (desktop) */}
         <nav className="hidden items-center gap-8 md:flex">
+          {/* Página inicial — sempre visível, mesmo com sessão iniciada */}
+          <Link
+            to="/"
+            className="text-sm font-semibold text-foreground/80 transition-colors hover:text-brand-navy"
+          >
+            Início
+          </Link>
+
           {navigationLinks.map((link) => (
             <a
               key={link.name}
@@ -49,17 +86,28 @@ export function LandingHeader() {
         </nav>
 
         {/* Ações (desktop) */}
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           {isAuthenticated ? (
-            <Button
-              asChild
-              className="rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark"
-            >
-              <Link to="/dashboard">
-                Ir para o Painel
-                <ArrowRight size={16} />
-              </Link>
-            </Button>
+            <>
+              {/* Conta: iniciais + nome (como na sidebar) e "Sair da Conta" */}
+              <UserMenu hideActions={hideAccountActions} />
+
+              <Button
+                asChild
+                aria-hidden={hideAccountActions || undefined}
+                tabIndex={hideAccountActions ? -1 : undefined}
+                className={cn(
+                  "rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark duration-200",
+                  hideAccountActions &&
+                    "w-0 overflow-hidden px-0! opacity-0 pointer-events-none",
+                )}
+              >
+                <Link to="/dashboard">
+                  Ir para o Painel
+                  <ArrowRight size={16} />
+                </Link>
+              </Button>
+            </>
           ) : (
             <>
               <Button asChild variant="ghost" className="rounded-xl font-semibold">
@@ -95,6 +143,15 @@ export function LandingHeader() {
         )}
       >
         <nav className="mx-auto max-w-7xl space-y-1 px-4 py-4 sm:px-6">
+          {/* Página inicial — sempre visível, mesmo com sessão iniciada */}
+          <Link
+            to="/"
+            onClick={closeMenu}
+            className="block rounded-lg px-3 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+          >
+            Início
+          </Link>
+
           {navigationLinks.map((link) => (
             <a
               key={link.name}
@@ -108,15 +165,26 @@ export function LandingHeader() {
 
           <div className="flex flex-col gap-2 pt-3">
             {isAuthenticated ? (
-              <Button
-                asChild
-                className="h-11 rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark"
-              >
-                <Link to="/dashboard" onClick={closeMenu}>
-                  Ir para o Painel
-                  <ArrowRight size={16} />
-                </Link>
-              </Button>
+              <>
+                {/* Conta: iniciais + nome (como na sidebar) e "Sair da conta" */}
+                <div className="rounded-xl border border-border bg-white px-3 py-2">
+                  <UserMenu
+                    logoutLabel="Sair da conta"
+                    onLogoutConfirmed={closeMenu}
+                    className="flex-wrap justify-between"
+                  />
+                </div>
+
+                <Button
+                  asChild
+                  className="h-11 rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark"
+                >
+                  <Link to="/dashboard" onClick={closeMenu}>
+                    Ir para o Painel
+                    <ArrowRight size={16} />
+                  </Link>
+                </Button>
+              </>
             ) : (
               <>
                 <Button asChild variant="outline" className="h-11 rounded-xl font-semibold">

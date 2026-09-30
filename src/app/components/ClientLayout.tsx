@@ -11,11 +11,14 @@ import {
   Users,
   Bell,
   ChevronDown,
+  Home,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
 
 const navigation = [
+  // Link para a página inicial pública — visível também com sessão iniciada.
+  { name: "Início", href: "/", icon: Home },
   { name: "Dashboard", href: "/cliente", icon: LayoutDashboard },
   { name: "Clientes", href: "/cliente/clientes", icon: Users },
   { name: "Produtos", href: "/cliente/produtos", icon: Package },
@@ -32,6 +35,10 @@ export function ClientLayout() {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const isActive = (href: string) => {
+    // `startsWith("/")` daria sempre verdadeiro em "/" — comparação exacta.
+    if (href === "/") {
+      return location.pathname === "/";
+    }
     if (href === "/cliente") {
       return location.pathname === "/cliente" || location.pathname === "/cliente/";
     }

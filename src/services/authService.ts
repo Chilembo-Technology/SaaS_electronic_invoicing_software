@@ -1,4 +1,4 @@
-import { authApi } from '../lib/api';
+import { authApi, getStoredToken } from '../lib/api';
 import { User, CreateUserDTO, UpdateUserDTO } from '../types/api';
 
 /**
@@ -84,9 +84,30 @@ export const authService = {
     return toUser(body?.data ?? (response.data as UserResource));
   },
 
+  /**
+   * Termina a sessão no backend (`POST /v1/auth/logout`, protegido por `auth:api`).
+   *
+   * O backend invalida o JWT (`auth()->logout()` → blacklist do `tymon/jwt-auth`)
+   * e responde 200 `{ success, message }`.
+   *
+   * ⚠️ O token é lido AQUI, de forma síncrona, e enviado explicitamente: os
+   * interceptores do axios correm em microtask (não são síncronos), pelo que o
+   * interceptor de request poderia consultar o `localStorage` já depois de o
+   * `AuthContext` o ter apagado — o pedido seguiria sem `Authorization`, o
+   * backend responderia 401 e o token NUNCA seria invalidado.
+   *
+   * Erros (rede, 401 de token expirado, 500) são engolidos de propósito: o
+   * logout local do utilizador nunca pode depender do backend.
+   */
   async logout(): Promise<void> {
+    const token = getStoredToken();
+
     try {
-      await authApi.post('/v1/auth/logout');
+      await authApi.post(
+        '/v1/auth/logout',
+        null,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+      );
     } catch {
       // Ignora erro de rede no logout
     }

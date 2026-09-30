@@ -17,6 +17,9 @@ import { LandingPage } from "../features/landing/pages/LandingPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { VerifyOtpPage } from "../features/auth/pages/VerifyOtpPage";
+// Recuperação de palavra-passe (3 ecrãs) — ver `features/auth/pages`.
+import { ResetOtpPage } from "../features/auth/pages/ResetOtpPage";
+import { NewPasswordPage } from "../features/auth/pages/NewPasswordPage";
 
 // Client panel
 import { ClientLayout } from "./components/ClientLayout";
@@ -46,8 +49,18 @@ export const router = createBrowserRouter([
     Component: VerifyOtpPage,
   },
   {
+    // Recuperação de palavra-passe, em 3 passos. O `email` viaja no `state` do
+    // router (memória): um refresh devolve o utilizador ao passo 1.
     path: "/recuperar-senha",
     Component: RecuperarSenha,
+  },
+  {
+    path: "/recuperar-senha/verificar-codigo",
+    Component: ResetOtpPage,
+  },
+  {
+    path: "/recuperar-senha/nova-senha",
+    Component: NewPasswordPage,
   },
   // Admin panel
   // Rota "pathless": fornece apenas o shell (Layout) aos filhos, sem reclamar
