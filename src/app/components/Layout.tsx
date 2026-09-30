@@ -9,6 +9,7 @@ import {
   Building2,
   CreditCard,
   LogOut,
+  Loader2,
   Menu,
   X,
   Trash2,
@@ -34,7 +35,7 @@ const adminNavigation = [
 
 export function Layout() {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
@@ -57,6 +58,18 @@ export function Layout() {
   const userName = user?.name || "Luis Chilembo";
   const userRole = (user?.role || user?.perfil || "Administrador").toString();
   const userEmail = user?.email || "luis@chilembo.tech";
+
+  /**
+   * "Sair da Conta" — confirma a intenção e delega no `AuthContext`, que avisa o
+   * backend (`POST /v1/auth/logout`, que invalida o JWT), limpa a sessão local e
+   * volta a `/login`. O diálogo nativo evita introduzir dependências novas.
+   */
+  const handleLogout = () => {
+    if (isLoggingOut) return;
+    if (window.confirm("Tem a certeza que quer sair da conta?")) {
+      logout();
+    }
+  };
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -131,11 +144,17 @@ export function Layout() {
                 <p className="text-xs text-muted-foreground truncate">{userRole}</p>
               </div>
               <button
-                onClick={logout}
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                aria-busy={isLoggingOut}
                 title="Sair da Conta"
-                className="text-muted-foreground hover:text-destructive transition-colors p-1.5 rounded-lg hover:bg-background"
+                className="text-muted-foreground hover:text-destructive transition-colors p-1.5 rounded-lg hover:bg-background disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <LogOut size={18} />
+                {isLoggingOut ? (
+                  <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <LogOut size={18} />
+                )}
               </button>
             </div>
           </div>
@@ -212,11 +231,17 @@ export function Layout() {
               </div>
               <div className="pt-4 border-t border-sidebar-border">
                 <button
-                  onClick={logout}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors font-medium text-sm"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  aria-busy={isLoggingOut}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-destructive/10 transition-colors font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <LogOut size={20} />
-                  <span>Sair da Conta ({userEmail})</span>
+                  {isLoggingOut ? (
+                    <Loader2 size={20} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <LogOut size={20} />
+                  )}
+                  <span>{isLoggingOut ? "A sair..." : `Sair da Conta (${userEmail})`}</span>
                 </button>
               </div>
             </nav>
