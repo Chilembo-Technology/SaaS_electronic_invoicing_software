@@ -15,8 +15,10 @@ import {
 } from '../../auth/utils/registerValidation';
 import { useUpdateCompany } from '../hooks/useUpdateCompany';
 import type { CompanyFormValues, CompanySettings } from '../types/company.types';
+import { pickLatestCorporateAccount } from '../utils/companyAccount';
 import { hasAnyError, validateCompanyFields, validatePrivateKeyFile } from '../utils/validation';
 import { CompanyLogoUpload } from './CompanyLogoUpload';
+import { BankSelect } from './BankSelect';
 
 interface CompanyFormProps {
   company: CompanySettings;
@@ -25,8 +27,14 @@ interface CompanyFormProps {
   onSaved: (company: CompanySettings) => void;
 }
 
-/** Extrai os valores editáveis de uma empresa. */
+/**
+ * Extrai os valores editáveis de uma empresa.
+ *
+ * Dados bancários: usa a conta MAIS RECENTE (`pickLatestCorporateAccount`) e não
+ * `corporate_accounts[0]` — ver o motivo no próprio utilitário.
+ */
 function toValues(company: CompanySettings): CompanyFormValues {
+  const account = pickLatestCorporateAccount(company);
   return {
     company_name: company.company_name,
     tax_number: company.tax_number,
@@ -36,8 +44,20 @@ function toValues(company: CompanySettings): CompanyFormValues {
     address: company.address,
     city: company.city,
     province: company.province,
+    country: company.country,
     agt_certificate_number: company.agt_certificate_number,
+    bank_id: account?.bank_id ?? '',
+    account_number: account?.account_number ?? '',
+    holder: account?.holder ?? '',
+    iban: account?.iban ?? '',
   };
+}
+
+/** Formata uma data ISO para a localidade PT (ou `—` se vazia). */
+function formatDateTime(value?: string | null): string {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('pt-PT');
 }
 
 export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
@@ -115,6 +135,13 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
         city: values.city,
         province: values.province,
         agt_certificate_number: values.agt_certificate_number,
+        // Dados bancários — reutiliza o id da conta mais recente (evita duplicados
+        // e garante que o formulário volta a mostrar o que foi gravado).
+        corporate_account_id: pickLatestCorporateAccount(company)?.id,
+        bank_id: values.bank_id,
+        account_number: values.account_number,
+        holder: values.holder,
+        iban: values.iban,
         private_key: privateKeyFile,
         logo: logoFile,
       });
@@ -240,7 +267,82 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
             error={fieldError('province')}
             disabled={!canEdit}
           />
+          <FormField
+            id="country"
+            label="País (ISO-2)"
+            value={values.country}
+            onChange={() => undefined}
+            hint="Não editável — definido no registo (ex.: AO)."
+            disabled
+          />
         </div>
+      </div>
+
+      {/* Dados bancários */}
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="mb-1 text-base font-semibold text-foreground">Dados bancários</h2>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Conta usada nos documentos emitidos. O banco é escolhido no catálogo central
+          (Angola Core Data) e guardado pela respetiva referência.
+        </p>
+        <div className="grid gap-5 md:grid-cols-2">
+          <BankSelect
+            id="bank_id"
+            label="Banco"
+            value={values.bank_id || null}
+            onChange={(bankId) => update('bank_id', bankId ?? '')}
+            error={fieldError('bank_id')}
+            disabled={!canEdit}
+          />
+          <FormField
+            id="account_number"
+            label="Número de conta"
+            value={values.account_number}
+            onChange={(v) => update('account_number', v.replace(/\D/g, '').slice(0, 11))}
+            error={fieldError('account_number')}
+            disabled={!canEdit}
+            inputMode="numeric"
+            hint="11 dígitos"
+          />
+          <FormField
+            id="holder"
+            label="Titular"
+            value={values.holder}
+            onChange={(v) => update('holder', v)}
+            error={fieldError('holder')}
+            disabled={!canEdit}
+          />
+          <FormField
+            id="iban"
+            label="IBAN"
+            value={values.iban}
+            onChange={(v) => update('iban', v)}
+            error={fieldError('iban')}
+            disabled={!canEdit}
+            placeholder="0005.0000.7998.9111.1019.7"
+            hint="Formato: 0000.0000.0000.0000.0000.0"
+          />
+        </div>
+      </div>
+
+      {/* Informação (só leitura) */}
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="mb-4 text-base font-semibold text-foreground">Informação</h2>
+        <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-muted-foreground">Estado</dt>
+            <dd className="font-medium text-foreground">{company.status || '—'}</dd>
+          </div>
+        
+          <div>
+            <dt className="text-muted-foreground">Criado em</dt>
+            <dd className="font-medium text-foreground">{formatDateTime(company.created_at)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Atualizado em</dt>
+            <dd className="font-medium text-foreground">{formatDateTime(company.updated_at)}</dd>
+          </div>
+        </dl>
       </div>
 
       {/* Identidade e certificação */}

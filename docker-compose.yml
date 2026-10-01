@@ -17,6 +17,10 @@ services:
       # por isso "/api" resolve para o proxy reverso sem CORS.
       - VITE_AUTH_API_URL=/api
       - VITE_ORGANIZATION_API_URL=/api
+      # Catálogo de bancos (Angola Core Data) — serviço à parte, publicado no
+      # host na porta 8003, com CORS aberto. Absoluto porque o proxy só
+      # encaminha auth/organization.
+      - VITE_CORE_DATA_API_URL=http://localhost:8003/api
 
   auth_service:
     build:

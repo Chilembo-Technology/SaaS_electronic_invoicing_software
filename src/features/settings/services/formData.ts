@@ -42,6 +42,13 @@ export function buildCompanyFormData(payload: UpdateCompanyPayload): FormData {
   appendIfPresent(form, 'province', payload.province);
   appendIfPresent(form, 'agt_certificate_number', payload.agt_certificate_number);
 
+  // Dados bancários (corporate account)
+  appendIfPresent(form, 'corporate_account_id', payload.corporate_account_id);
+  appendIfPresent(form, 'bank_id', payload.bank_id);
+  appendIfPresent(form, 'account_number', payload.account_number);
+  appendIfPresent(form, 'holder', payload.holder);
+  appendIfPresent(form, 'iban', payload.iban);
+
   appendFileIfPresent(form, 'private_key', payload.private_key);
   appendFileIfPresent(form, 'logo', payload.logo);
 

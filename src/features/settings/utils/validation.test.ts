@@ -18,7 +18,12 @@ const COMPANY = {
   address: '',
   city: '',
   province: '',
+  country: 'AO',
   agt_certificate_number: '',
+  bank_id: '',
+  account_number: '',
+  holder: '',
+  iban: '',
 };
 
 describe('validateCompanyFields', () => {
@@ -36,6 +41,31 @@ describe('validateCompanyFields', () => {
     const errors = validateCompanyFields({ ...COMPANY, admin_email: 'invalido', phone: '123' });
     expect(errors.admin_email).toBeTruthy();
     expect(errors.phone).toBeTruthy();
+  });
+
+  it('valida os dados bancários quando preenchidos', () => {
+    const errors = validateCompanyFields({
+      ...COMPANY,
+      bank_id: 'nao-e-uuid',
+      account_number: '123',
+      iban: 'invalido',
+    });
+    expect(errors.bank_id).toBeTruthy();
+    expect(errors.account_number).toBeTruthy();
+    expect(errors.iban).toBeTruthy();
+  });
+
+  it('aceita dados bancários válidos', () => {
+    const errors = validateCompanyFields({
+      ...COMPANY,
+      bank_id: '59183559-65ff-3076-b8ca-d2d03d26a42a',
+      account_number: '56425593142',
+      holder: 'Acme Lda',
+      iban: '0005.0000.7998.9111.1019.7',
+    });
+    expect(errors.bank_id).toBeUndefined();
+    expect(errors.account_number).toBeUndefined();
+    expect(errors.iban).toBeUndefined();
   });
 });
 

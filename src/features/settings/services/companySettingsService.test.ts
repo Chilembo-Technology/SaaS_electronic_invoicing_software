@@ -78,6 +78,63 @@ describe('companySettingsService.updateCompany', () => {
     const formData = mocks.post.mock.calls[0][1] as FormData;
     expect(formData.get('logo')).toBeInstanceOf(File);
   });
+
+  it('inclui os dados bancários no FormData', async () => {
+    mocks.post.mockResolvedValueOnce({ data: { data: { id: 'c1' } } });
+
+    await companySettingsService.updateCompany({
+      company_id: 'c1',
+      corporate_account_id: 'acc1',
+      bank_id: 'b1',
+      account_number: '56425593142',
+      holder: 'Acme',
+      iban: '0005.0000.7998.9111.1019.7',
+    });
+
+    const formData = mocks.post.mock.calls[0][1] as FormData;
+    expect(formData.get('corporate_account_id')).toBe('acc1');
+    expect(formData.get('bank_id')).toBe('b1');
+    expect(formData.get('account_number')).toBe('56425593142');
+    expect(formData.get('holder')).toBe('Acme');
+    expect(formData.get('iban')).toBe('0005.0000.7998.9111.1019.7');
+  });
+
+  it('recarrega a empresa após o update (inclui corporate_accounts)', async () => {
+    mocks.post.mockResolvedValueOnce({ data: { data: { id: 'c1', company_name: 'Acme 2' } } });
+    mocks.get.mockResolvedValueOnce({
+      data: {
+        success: true,
+        data: [
+          {
+            id: 'c1',
+            company_name: 'Acme 2',
+            country: 'AO',
+            corporate_accounts: [
+              {
+                id: 'acc1',
+                bank_id: 'b1',
+                account_number: '56425593142',
+                holder: 'Acme',
+                iban: '0005.0000.7998.9111.1019.7',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const updated = await companySettingsService.updateCompany({ company_id: 'c1', company_name: 'Acme 2' });
+
+    expect(mocks.get).toHaveBeenCalledWith('/v1/company/list', {
+      params: { company_id: 'c1', per_page: 1, page: 1 },
+    });
+    expect(updated.corporate_accounts).toHaveLength(1);
+    expect(updated.corporate_accounts[0]).toMatchObject({
+      id: 'acc1',
+      bank_id: 'b1',
+      account_number: '56425593142',
+    });
+  });
 });
 
 describe('mapCompany', () => {

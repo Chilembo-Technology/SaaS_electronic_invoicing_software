@@ -30,6 +30,13 @@ import type {
 } from '../types/profile.types';
 import type { EditUserFieldErrors, EditUserFormValues } from '../types/user.types';
 
+/** UUID (mesma regra `uuid` do Laravel). */
+export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** `account_number`: `regex:/^\d{11}$/`. */
+export const ACCOUNT_NUMBER_REGEX = /^\d{11}$/;
+/** `iban`: `regex:/^\d{4}\.\d{4}\.\d{4}\.\d{4}\.\d{4}\.\d{1}$/i`. */
+export const IBAN_REGEX = /^\d{4}\.\d{4}\.\d{4}\.\d{4}\.\d{4}\.\d{1}$/;
+
 /** Mensagens alinhadas com o texto devolvido pelo backend (PT). */
 export const SETTINGS_MESSAGES = {
   nameRequired: MESSAGES.firstNameRequired,
@@ -46,6 +53,10 @@ export const SETTINGS_MESSAGES = {
   confirmMismatch: MESSAGES.confirmPasswordMismatch,
   privateKeyMimes: 'A chave privada deve ser um ficheiro PDF, JPG, JPEG, PNG, GIF, SVG ou WEBP.',
   privateKeyMax: 'A chave privada não pode ter mais que 2MB (2048 kilobytes).',
+  bankIdInvalid: 'O ID do banco deve ser um UUID (identificador universal) válido.',
+  accountNumberFormat: 'O número da conta deve conter apenas 11 dígitos numéricos.',
+  holderMax: 'O titular deve ter no máximo 255 caracteres.',
+  ibanFormat: 'Iban inválido. Ex.: 0005.0000.7998.9111.1019.7',
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -82,6 +93,23 @@ export function validateCompanyFields(values: CompanyFormValues): CompanyFieldEr
   if (values.province.trim().length > AUTH_TEXT_MAX) errors.province = MESSAGES.provinceMax;
   if (values.agt_certificate_number.trim().length > AUTH_TEXT_MAX) {
     errors.agt_certificate_number = MESSAGES.agtMax;
+  }
+
+  // Dados bancários (corporate account) — opcionais, mas validados se preenchidos.
+  if (values.bank_id.trim() && !UUID_REGEX.test(values.bank_id.trim())) {
+    errors.bank_id = SETTINGS_MESSAGES.bankIdInvalid;
+  }
+
+  if (values.account_number.trim() && !ACCOUNT_NUMBER_REGEX.test(values.account_number.trim())) {
+    errors.account_number = SETTINGS_MESSAGES.accountNumberFormat;
+  }
+
+  if (values.holder.trim().length > AUTH_TEXT_MAX) {
+    errors.holder = SETTINGS_MESSAGES.holderMax;
+  }
+
+  if (values.iban.trim() && !IBAN_REGEX.test(values.iban.trim())) {
+    errors.iban = SETTINGS_MESSAGES.ibanFormat;
   }
 
   return errors;

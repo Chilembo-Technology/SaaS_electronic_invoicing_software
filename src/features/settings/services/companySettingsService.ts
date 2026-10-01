@@ -36,6 +36,20 @@ interface RawCompany {
   agt_certificate_number?: string;
   private_key_path?: string | null;
   status?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  corporate_accounts?: RawCorporateAccount[];
+}
+
+/** Conta bancária devolvida em `corporate_accounts[]`. */
+interface RawCorporateAccount {
+  id?: string | number | null;
+  bank_id?: string | null;
+  account_number?: string | null;
+  holder?: string | null;
+  iban?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 const COMPANY_LIST_PATH = '/v1/company/list';
@@ -57,6 +71,17 @@ export function mapCompany(raw: RawCompany | null | undefined): CompanySettings 
     agt_certificate_number: company.agt_certificate_number ?? '',
     private_key_path: company.private_key_path ?? null,
     status: company.status ?? '',
+    created_at: company.created_at ?? null,
+    updated_at: company.updated_at ?? null,
+    corporate_accounts: (company.corporate_accounts ?? []).map((account) => ({
+      id: account.id != null ? String(account.id) : '',
+      bank_id: account.bank_id ?? '',
+      account_number: account.account_number ?? '',
+      holder: account.holder ?? '',
+      iban: account.iban ?? '',
+      created_at: account.created_at ?? null,
+      updated_at: account.updated_at ?? null,
+    })),
   };
 }
 
@@ -85,6 +110,16 @@ export const companySettingsService = {
 
     const body = response.data;
     const updated = Array.isArray(body) ? body[0] : body?.data ?? (body as unknown as RawCompany);
+
+    // O `PUT /company/update` devolve apenas o Model da empresa (sem as contas
+    // bancárias, que vivem noutra tabela). Recarregamos para devolver o estado
+    // canónico — inclui o `id` da corporate account criada/atualizada.
+    try {
+      const canonical = await this.getCompany(payload.company_id);
+      if (canonical) return canonical;
+    } catch {
+      // Ignora: cai no fallback abaixo.
+    }
 
     return mapCompany(updated as RawCompany);
   },
