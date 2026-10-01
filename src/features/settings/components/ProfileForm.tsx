@@ -138,7 +138,7 @@ export function ProfileForm({ profile, canEdit, onSaved }: ProfileFormProps) {
       {!canEdit ? (
         <FormAlert
           variant="info"
-          message="Só administradores podem editar o perfil (o backend exige esse papel). Está a ver os dados em modo de leitura."
+          message="Só administradores podem editar o perfil. Está a ver os dados em modo de leitura."
         />
       ) : null}
 
