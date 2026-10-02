@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { RecuperarSenha } from "./pages/RecuperarSenha";
 import { Dashboard } from "./pages/Dashboard";
 import { Clientes } from "./pages/Clientes";
@@ -6,11 +6,17 @@ import { Produtos } from "./pages/Produtos";
 import { EmitirFatura } from "./pages/EmitirFatura";
 import { Faturas } from "./pages/Faturas";
 import { Relatorios } from "./pages/Relatorios";
-import { Configuracoes } from "./pages/Configuracoes";
 import { Usuarios } from "./pages/Usuarios";
 import { Empresas } from "./pages/Empresas";
 import { Planos } from "./pages/Planos";
 import { Layout } from "./components/Layout";
+
+// Secção de Configurações (empresa / perfil / utilizadores).
+import { SettingsLayout } from "../features/settings/pages/SettingsLayout";
+import { CompanySettingsPage } from "../features/settings/pages/CompanySettingsPage";
+import { ProfileSettingsPage } from "../features/settings/pages/ProfileSettingsPage";
+import { UsersSettingsPage } from "../features/settings/pages/UsersSettingsPage";
+import { RequireAdmin, RequireAuth } from "../features/settings/components/RouteGuards";
 
 // Páginas públicas (utilizadores NÃO autenticados)
 import { LandingPage } from "../features/landing/pages/LandingPage";
@@ -93,8 +99,34 @@ export const router = createBrowserRouter([
         Component: Relatorios,
       },
       {
+        // Secção de Configurações: layout próprio (menu lateral) + 3 sub-rotas.
+        // A rota antiga `/configuracoes` (templates) foi substituída por esta.
         path: "configuracoes",
-        Component: Configuracoes,
+        element: (
+          <RequireAuth>
+            <SettingsLayout />
+          </RequireAuth>
+        ),
+        children: [
+          { index: true, element: <Navigate to="perfil" replace /> },
+          {
+            path: "empresa",
+            element: (
+              <RequireAdmin>
+                <CompanySettingsPage />
+              </RequireAdmin>
+            ),
+          },
+          { path: "perfil", Component: ProfileSettingsPage },
+          {
+            path: "utilizadores",
+            element: (
+              <RequireAdmin>
+                <UsersSettingsPage />
+              </RequireAdmin>
+            ),
+          },
+        ],
       },
       {
         path: "usuarios",

@@ -29,8 +29,20 @@ export const removeStoredToken = (): void => {
  * pelo `server.proxy` do Vite em desenvolvimento — evita CORS e funciona com um
  * único `.env`. Em `.env.example` estão documentadas as alternativas absolutas
  * (ligação directa a http://localhost:8001/api e http://localhost:8002/api).
+ *
+ * O Angola-Core-Data (catálogo de bancos) é a excepção: tem `baseURL` PRÓPRIO
+ * (ver `coreDataApi`) porque é um serviço à parte, publicado na porta 8003.
  */
 const DEFAULT_API_ROOT = '/api';
+
+/**
+ * Raiz do Angola-Core-Data (`docker-compose.yml` próprio: `8003:80`).
+ *
+ * Não entra no proxy relativo `/api` (o nginx/Vite só encaminham auth e
+ * organization) pelo que o default é absoluto. O serviço tem CORS aberto
+ * (`Access-Control-Allow-Origin: *`) e o endpoint é público.
+ */
+const DEFAULT_CORE_DATA_API_ROOT = 'http://localhost:8003/api';
 
 /** Tempo máximo (ms) por pedido — evita pedidos "pendurados" e dá erro de rede tratável. */
 const REQUEST_TIMEOUT = 20000;
@@ -48,6 +60,21 @@ export const orgApi: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_ORGANIZATION_API_URL || DEFAULT_API_ROOT,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  timeout: REQUEST_TIMEOUT,
+});
+
+/**
+ * Cliente do Angola-Core-Data — dados de referência (bancos: `GET /v1/banks`).
+ *
+ * De propósito NÃO recebe o interceptor de token nem o de 401: o endpoint é
+ * público (sem `jwt.claims`) e um 401 inesperado aqui não pode limpar a sessão
+ * nem recarregar a página para `/login` no meio do formulário da empresa.
+ */
+export const coreDataApi: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_CORE_DATA_API_URL || DEFAULT_CORE_DATA_API_ROOT,
+  headers: {
     'Accept': 'application/json',
   },
   timeout: REQUEST_TIMEOUT,
