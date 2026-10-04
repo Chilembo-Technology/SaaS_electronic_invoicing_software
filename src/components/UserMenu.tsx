@@ -15,19 +15,6 @@ interface UserMenuProps {
   showIdentity?: boolean;
   /** Chamado depois de o utilizador confirmar a saída (ex.: fechar o menu mobile). */
   onLogoutConfirmed?: () => void;
-  /**
-   * Oculta o nome, o perfil (role) e o botão de saída, com uma transição suave
-   * (~200ms) — o avatar com as iniciais mantém-se sempre visível.
-   *
-   * Usado na navbar da página inicial enquanto a faixa "Sessão iniciada"
-   * (Zona 2) está no ecrã: essa faixa já mostra o nome, "Sair da conta" e "Ir
-   * para Dashboard", pelo que a navbar se reduz ao avatar. Quando a faixa sai
-   * do ecrã, tudo volta a aparecer.
-   *
-   * Os elementos permanecem no DOM (esbatidos + colapsados e retirados da
-   * árvore de acessibilidade), para a transição ser animável.
-   */
-  hideActions?: boolean;
   className?: string;
 }
 
@@ -47,7 +34,6 @@ export function UserMenu({
   logoutLabel,
   showIdentity = true,
   onLogoutConfirmed,
-  hideActions = false,
   className,
 }: UserMenuProps) {
   const { user, logout, isLoggingOut } = useAuth();
@@ -85,31 +71,12 @@ export function UserMenu({
           <div className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold">
             {getInitials(userName)}
           </div>
-          <div
-            className={cn(
-              "min-w-0 text-left transition-all duration-200",
-              hideActions && "w-0 overflow-hidden",
-            )}
-          >
-            <p
-              className={cn(
-                "text-sm font-semibold text-foreground truncate transition-opacity duration-200",
-                hideActions && "opacity-0",
-              )}
-              aria-hidden={hideActions || undefined}
-            >
+          <div className="min-w-0 text-left">
+            <p className="text-sm font-semibold text-foreground truncate">
               {userName}
             </p>
             {userRole ? (
-              <p
-                className={cn(
-                  "text-xs text-muted-foreground truncate transition-opacity duration-200",
-                  hideActions && "opacity-0",
-                )}
-                aria-hidden={hideActions || undefined}
-              >
-                {userRole}
-              </p>
+              <p className="text-xs text-muted-foreground truncate">{userRole}</p>
             ) : null}
           </div>
         </>
@@ -123,12 +90,7 @@ export function UserMenu({
           disabled={isLoggingOut}
           aria-busy={isLoggingOut}
           title="Sair da Conta"
-          aria-hidden={hideActions || undefined}
-          tabIndex={hideActions ? -1 : undefined}
-          className={cn(
-            "rounded-xl font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive duration-200",
-            hideActions && "w-0 overflow-hidden px-0! opacity-0 pointer-events-none",
-          )}
+          className="rounded-xl font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
         >
           {isLoggingOut ? (
             <Loader2 className="animate-spin" aria-hidden="true" />
@@ -144,12 +106,7 @@ export function UserMenu({
           disabled={isLoggingOut}
           aria-busy={isLoggingOut}
           title="Sair da Conta"
-          aria-hidden={hideActions || undefined}
-          tabIndex={hideActions ? -1 : undefined}
-          className={cn(
-            "text-muted-foreground hover:text-destructive transition-all duration-200 p-1.5 rounded-lg hover:bg-background disabled:opacity-60 disabled:cursor-not-allowed",
-            hideActions && "w-0 overflow-hidden p-0 opacity-0 pointer-events-none",
-          )}
+          className="text-muted-foreground hover:text-destructive transition-colors p-1.5 rounded-lg hover:bg-background disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isLoggingOut ? (
             <Loader2 size={18} className="animate-spin" aria-hidden="true" />

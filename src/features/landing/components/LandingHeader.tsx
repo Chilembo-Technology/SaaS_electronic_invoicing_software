@@ -14,39 +14,19 @@ const navigationLinks = [
   { name: "FAQ", href: "#faq" },
 ];
 
-interface LandingHeaderProps {
-  /**
-   * Esconde o nome, o perfil (role), o botão de saída e o CTA "Ir para o
-   * Painel", com uma transição suave (~200ms) — fica apenas o avatar.
-   *
-   * A página inicial liga-o enquanto a faixa "Sessão iniciada" (Zona 2) está
-   * dentro do ecrã: nesse momento o nome e essas acções já estão visíveis no
-   * conteúdo, pelo que a navbar não as duplica. Quando a faixa sai do ecrã, a
-   * navbar volta a mostrá-las.
-   *
-   * Nada é removido do DOM (as acções ficam esbatidas/colapsadas e fora da
-   * árvore de acessibilidade), para a transição poder ser animada. Por omissão
-   * é `false` — a navbar mostra tudo.
-   */
-  hideAccountActions?: boolean;
-}
-
 /**
  * Header público da Landing: logótipo, navegação por âncoras e ações de conta.
  *
  * Reage à sessão:
  *   - deslogado — "Entrar" (`/login`) e "Registar" (`/registar`);
- *   - logado — `UserMenu` (iniciais + nome, tal como na sidebar, e "Sair da
- *     conta") e o CTA "Ir para o Painel" (`/dashboard`).
+ *   - logado — `UserMenu` (iniciais + nome + perfil, tal como na sidebar, e
+ *     "Sair da Conta") e o CTA "Ir para o Painel" (`/dashboard`).
  *
- * O link "Início" (`/`) está sempre visível, em ambos os estados.
- *
- * Reage também ao scroll (via `hideAccountActions`): enquanto a secção
- * "Sessão iniciada" está no ecrã, só o avatar permanece visível — o nome, o
- * perfil, a saída e "Ir para o Painel" escondem-se, porque a faixa já os
- * mostra. Quando a faixa sai do ecrã, a navbar recupera tudo — ver `LandingPage`.
+ * O link "Início" (`/`) está sempre visível, em ambos os estados. As ações de
+ * conta (nome, saída e painel) ficam sempre visíveis — não há qualquer
+ * comportamento ligado ao scroll.
  */
-export function LandingHeader({ hideAccountActions = false }: LandingHeaderProps) {
+export function LandingHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated } = useAuth();
 
@@ -90,17 +70,11 @@ export function LandingHeader({ hideAccountActions = false }: LandingHeaderProps
           {isAuthenticated ? (
             <>
               {/* Conta: iniciais + nome (como na sidebar) e "Sair da Conta" */}
-              <UserMenu hideActions={hideAccountActions} />
+              <UserMenu />
 
               <Button
                 asChild
-                aria-hidden={hideAccountActions || undefined}
-                tabIndex={hideAccountActions ? -1 : undefined}
-                className={cn(
-                  "rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark duration-200",
-                  hideAccountActions &&
-                    "w-0 overflow-hidden px-0! opacity-0 pointer-events-none",
-                )}
+                className="rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark"
               >
                 <Link to="/dashboard">
                   Ir para o Painel

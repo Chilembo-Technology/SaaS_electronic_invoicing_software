@@ -22,10 +22,10 @@ vi.mock("../../../contexts/AuthContext", () => ({ useAuth: () => authMocks }));
 
 import { LandingHeader } from "./LandingHeader";
 
-const renderHeader = (props: { hideAccountActions?: boolean } = {}) =>
+const renderHeader = () =>
   render(
     <MemoryRouter>
-      <LandingHeader {...props} />
+      <LandingHeader />
     </MemoryRouter>,
   );
 
@@ -71,7 +71,7 @@ describe("LandingHeader", () => {
     expect(screen.queryByRole("link", { name: "Registar" })).not.toBeInTheDocument();
   });
 
-  it("mostra o nome, o perfil, a saída e o painel por omissão", () => {
+  it("mantém o nome, o perfil, a saída e o painel sempre visíveis (sem scroll)", () => {
     authMocks.isAuthenticated = true;
     renderHeader();
 
@@ -81,25 +81,9 @@ describe("LandingHeader", () => {
     expect(screen.getAllByText("Ir para o Painel")[0].closest("a")).not.toHaveAttribute(
       "aria-hidden",
     );
-  });
 
-  it("esconde o nome, o perfil, a saída e o painel quando as acções estão duplicadas", () => {
-    authMocks.isAuthenticated = true;
-    renderHeader({ hideAccountActions: true });
-
-    // Continuam no DOM (a transição precisa deles), mas fora da árvore de
-    // acessibilidade e sem interacção.
-    expect(screen.getAllByText("Ana Silva")[0]).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getAllByText("Administrador")[0]).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getAllByTitle("Sair da Conta")[0]).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getAllByText("Ir para o Painel")[0].closest("a")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    );
-
-    // Fica só o avatar — o link "Início" e as restantes âncoras mantêm-se.
+    // O avatar e as restantes âncoras mantêm-se.
     expect(screen.getAllByText("AS")[0]).toBeInTheDocument();
-    expect(screen.getAllByText("AS")[0]).not.toHaveAttribute("aria-hidden");
     expect(screen.getAllByRole("link", { name: "Início" })[0]).not.toHaveAttribute("aria-hidden");
     expect(screen.getAllByText("Planos")[0]).toBeInTheDocument();
   });
