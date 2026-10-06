@@ -37,13 +37,13 @@ export function AuthShell({
           <div className="text-center space-y-3">
             <Link
               to="/"
-              className="inline-flex h-16 w-16 items-center justify-center"
+              className="inline-flex items-center justify-center"
               aria-label="Voltar à página inicial"
             >
               <img
                 src="/logo_with_name.png"
                 alt="Fatura Mais"
-                className="h-full w-full object-contain"
+                className="h-20 w-auto sm:h-24"
               />
             </Link>
 
