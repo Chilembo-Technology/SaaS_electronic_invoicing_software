@@ -78,3 +78,55 @@ describe('usersSettingsService.updateUser', () => {
     expect(updated.status).toBe('inactive');
   });
 });
+
+describe('usersSettingsService.createUser', () => {
+  const PAYLOAD = {
+    first_name: 'Ana',
+    last_name: 'Silva',
+    email: 'ana@kianda.ao',
+    password: 'segredo123',
+    phone_number: '923456789',
+    bi_number: '001234567LA042',
+    company_id: 'c1',
+    role: 'Administrator' as const,
+    status: 'active' as const,
+  };
+
+  it('faz POST multipart para /v1/users com todos os campos', async () => {
+    mocks.post.mockResolvedValueOnce({
+      data: { success: true, data: { id: 'u9', first_name: 'Ana', status: 'active', roles: ['administrator'] } },
+    });
+
+    const created = await usersSettingsService.createUser(PAYLOAD);
+
+    const [path, formData, config] = mocks.post.mock.calls[0];
+    expect(path).toBe('/v1/users');
+    expect(config).toEqual({ headers: { 'Content-Type': 'multipart/form-data' } });
+    expect((formData as FormData).get('first_name')).toBe('Ana');
+    expect((formData as FormData).get('email')).toBe('ana@kianda.ao');
+    expect((formData as FormData).get('password')).toBe('segredo123');
+    expect((formData as FormData).get('company_id')).toBe('c1');
+    expect((formData as FormData).get('role')).toBe('Administrator');
+    expect((formData as FormData).get('status')).toBe('active');
+    // Sem foto, o campo não entra no FormData (backend trata `nullable`).
+    expect((formData as FormData).get('photo')).toBeNull();
+    expect(created).toMatchObject({ id: 'u9', first_name: 'Ana', roles: ['administrator'] });
+  });
+
+  it('anexa a fotografia quando existe', async () => {
+    mocks.post.mockResolvedValueOnce({ data: { success: true, data: { id: 'u10' } } });
+
+    const photo = new File(['x'], 'foto.png', { type: 'image/png' });
+    await usersSettingsService.createUser({ ...PAYLOAD, photo });
+
+    // `clearMocks` limpa os calls entre testes — este é o único call deste teste.
+    const formData = mocks.post.mock.calls[0][1] as FormData;
+    expect(formData.get('photo')).toBe(photo);
+  });
+
+  it('propaga o 422 do Laravel (email duplicado) sem o engolir', async () => {
+    mocks.post.mockRejectedValueOnce(new Error('422'));
+
+    await expect(usersSettingsService.createUser(PAYLOAD)).rejects.toThrow('422');
+  });
+});

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   hasAnyError,
   validateCompanyFields,
+  validateCreateUserFields,
+  validateCreateUserPhoto,
   validateEditUserFields,
   validateLogoFile,
   validatePasswordFields,
@@ -121,5 +123,56 @@ describe('validateLogoFile', () => {
 
   it('aceita um PNG pequeno', () => {
     expect(validateLogoFile(new File(['a'], 'logo.png', { type: 'image/png' }))).toBeUndefined();
+  });
+});
+
+describe('validateCreateUserFields', () => {
+  const valid = {
+    first_name: 'Ana',
+    last_name: 'Silva',
+    email: 'ana@kianda.ao',
+    password: 'segredo123',
+    phone_number: '923456789',
+    bi_number: '001234567LA042',
+    role: 'Administrator' as const,
+    status: 'active' as const,
+  };
+
+  it('aceita valores válidos', () => {
+    expect(validateCreateUserFields(valid)).toEqual({});
+  });
+
+  it('exige password e BI (ao contrário da edição)', () => {
+    const errors = validateCreateUserFields({ ...valid, password: '', bi_number: '' });
+    expect(errors.password).toBeTruthy();
+    expect(errors.bi_number).toBeTruthy();
+  });
+
+  it('valida o formato do telefone e do BI', () => {
+    const errors = validateCreateUserFields({ ...valid, phone_number: '123', bi_number: 'abc' });
+    expect(errors.phone_number).toBeTruthy();
+    expect(errors.bi_number).toBeTruthy();
+  });
+
+  it('só aceita papéis permitidos (nunca super-admin)', () => {
+    const errors = validateCreateUserFields({ ...valid, role: 'super-admin' as never });
+    expect(errors.role).toBeTruthy();
+  });
+});
+
+describe('validateCreateUserPhoto', () => {
+  it('rejeita extensões não permitidas', () => {
+    expect(validateCreateUserPhoto(new File(['a'], 'virus.exe'))).toBeTruthy();
+  });
+
+  it('rejeita imagens acima de 2MB', () => {
+    const big = new File(['a'], 'foto.png', { type: 'image/png' });
+    Object.defineProperty(big, 'size', { value: 3 * 1024 * 1024 });
+    expect(validateCreateUserPhoto(big)).toBeTruthy();
+  });
+
+  it('aceita um PNG pequeno e aceita a ausência de foto', () => {
+    expect(validateCreateUserPhoto(new File(['a'], 'foto.png', { type: 'image/png' }))).toBeUndefined();
+    expect(validateCreateUserPhoto(null)).toBeUndefined();
   });
 });
