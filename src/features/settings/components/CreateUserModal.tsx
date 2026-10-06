@@ -156,15 +156,26 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
+      {/* Responsividade: altura limitada a 90% do ecrã, header fixo, corpo com
+          scroll interno (o form) e footer fixo — nunca obriga a zoom out.
+          `bg-card` reproduz o card branco do Login/Registo, para o fundo
+          cinza dos inputs (bg-background) voltar a contrastar. */}
+      <DialogContent className="flex max-h-[90dvh] flex-col bg-card p-4 sm:max-w-3xl sm:p-6">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Adicionar Utilizador</DialogTitle>
           <DialogDescription>
             Crie um novo utilizador para a sua empresa. O papel define as permissões de acesso.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        {/* O form É a área de scroll (flex-1 + min-h-0). O footer fica fora e o
+            botão submit liga-se ao form pelo atributo HTML `form`. */}
+        <form
+          onSubmit={handleSubmit}
+          id="create-user-form"
+          className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-1"
+          noValidate
+        >
           {submitError ? (
             <FormAlert variant="error" title="Não foi possível criar" message={submitError} />
           ) : null}
@@ -177,7 +188,9 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
             />
           ) : null}
 
-          <div className="grid gap-5 md:grid-cols-2">
+          {/* Grelha responsiva: 1 coluna em mobile, 2 colunas a partir de sm
+              (mesmo breakpoint do AdminUserStepForm do registo). */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField
               id="create_first_name"
               label="Nome"
@@ -186,6 +199,7 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
               error={fieldError('first_name')}
               required
               disabled={isCreating}
+              validating={isCreating}
               autoComplete="given-name"
               placeholder="Nome próprio"
             />
@@ -197,6 +211,7 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
               error={fieldError('last_name')}
               required
               disabled={isCreating}
+              validating={isCreating}
               autoComplete="family-name"
               placeholder="Apelido"
             />
@@ -209,9 +224,10 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
               error={fieldError('email')}
               required
               disabled={isCreating}
+              validating={isCreating}
               autoComplete="email"
               placeholder="nome@empresa.ao"
-              className="md:col-span-2"
+              className="sm:col-span-2"
             />
             <FormField
               id="create_phone"
@@ -223,6 +239,7 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
               error={fieldError('phone_number')}
               required
               disabled={isCreating}
+              validating={isCreating}
               autoComplete="tel"
               placeholder="923000000"
               hint="9 dígitos, começando por 91, 92, 93, 94, 99, 90, 95, 96 ou 97."
@@ -235,6 +252,7 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
               error={fieldError('bi_number')}
               required
               disabled={isCreating}
+              validating={isCreating}
               autoComplete="off"
               placeholder="000000000LA000"
               hint="9 dígitos + 2 letras maiúsculas + 3 dígitos."
@@ -248,10 +266,11 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
               error={fieldError('password')}
               required
               disabled={isCreating}
+              validating={isCreating}
               autoComplete="new-password"
               placeholder="Mínimo 8 caracteres"
               hint="Mínimo 8 caracteres — o utilizador poderá alterá-la depois."
-              className="md:col-span-2"
+              className="sm:col-span-2"
             />
 
             <div>
@@ -266,7 +285,10 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
                 onValueChange={(value) => update('role', value as CreateUserRole)}
                 disabled={isCreating}
               >
-                <SelectTrigger id="create_role" className="mt-1.5 h-12 w-full rounded-xl">
+                <SelectTrigger
+                  id="create_role"
+                  className="mt-1.5 h-12 w-full rounded-xl bg-background focus-visible:border-brand-navy"
+                >
                   <SelectValue placeholder="Selecione o papel" />
                 </SelectTrigger>
                 <SelectContent>
@@ -295,7 +317,10 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
                 onValueChange={(value) => update('status', value as CreateUserFormValues['status'])}
                 disabled={isCreating}
               >
-                <SelectTrigger id="create_status" className="mt-1.5 h-12 w-full rounded-xl">
+                <SelectTrigger
+                  id="create_status"
+                  className="mt-1.5 h-12 w-full rounded-xl bg-background focus-visible:border-brand-navy"
+                >
                   <SelectValue placeholder="Selecione o estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -308,7 +333,7 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
               ) : null}
             </div>
 
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2">
               <Label htmlFor="create_photo" className="text-sm font-medium text-foreground">
                 Fotografia (opcional)
               </Label>
@@ -376,25 +401,35 @@ export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: Cr
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isCreating}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isCreating || !companyId}>
-              {isCreating ? (
-                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-              ) : (
-                <UserPlus size={16} aria-hidden="true" />
-              )}
-              {isCreating ? 'A criar…' : 'Criar Utilizador'}
-            </Button>
-          </DialogFooter>
         </form>
+
+        {/* Footer fixo em baixo — DEPOIS do form, logo fora da área de scroll:
+            em mobile os botões empilham a largura toda; em sm+ ficam lado a
+            lado. O submit liga-se ao form pelo atributo HTML `form`. */}
+        <DialogFooter className="shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isCreating}
+            className="h-11 w-full rounded-xl sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="create-user-form"
+            disabled={isCreating || !companyId}
+            className="h-11 w-full rounded-xl sm:w-auto"
+          >
+            {isCreating ? (
+              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <UserPlus size={16} aria-hidden="true" />
+            )}
+            {isCreating ? 'A criar…' : 'Criar Utilizador'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
