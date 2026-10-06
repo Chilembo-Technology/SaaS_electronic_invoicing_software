@@ -72,7 +72,7 @@ describe('usersSettingsService.updateUser', () => {
 
     const [path, formData, config] = mocks.post.mock.calls[0];
     expect(path).toBe('/v1/users/update/u1');
-    expect((formData as FormData).get('company_id')).toBe('c1');
+    expect((formData as FormData).get('company_id')).toBe('c1'); 
     expect((formData as FormData).get('status')).toBe('inactive');
     expect(config).toEqual({ headers: { 'Content-Type': 'multipart/form-data' } });
     expect(updated.status).toBe('inactive');
