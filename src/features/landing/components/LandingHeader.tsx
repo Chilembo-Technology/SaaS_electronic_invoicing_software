@@ -40,7 +40,7 @@ export function LandingHeader() {
           <img
             src="/logo_with_name.png"
             alt="Fatura Mais"
-            className="h-12 w-auto object-contain"
+            className="h-18 w-auto object-contain"
           />
         </Link>
 
@@ -77,8 +77,7 @@ export function LandingHeader() {
                 className="rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark"
               >
                 <Link to="/dashboard">
-                  Ir para o Painel
-                  <ArrowRight size={16} />
+                  Ir para o Painel 
                 </Link>
               </Button>
             </>
@@ -154,8 +153,7 @@ export function LandingHeader() {
                   className="h-11 rounded-xl bg-brand-navy font-semibold text-white hover:bg-brand-navy-dark"
                 >
                   <Link to="/dashboard" onClick={closeMenu}>
-                    Ir para o Painel
-                    <ArrowRight size={16} />
+                    Ir para o Painel 
                   </Link>
                 </Button>
               </>

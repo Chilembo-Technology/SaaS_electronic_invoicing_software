@@ -72,7 +72,12 @@ export const router = createBrowserRouter([
   // Rota "pathless": fornece apenas o shell (Layout) aos filhos, sem reclamar
   // o path "/" — que passou a ser a Landing Page.
   {
-    Component: Layout,
+        element: (
+      <RequireAuth>
+        <Layout />
+      </RequireAuth>
+    ),
+
     children: [
       {
         path: "dashboard",
