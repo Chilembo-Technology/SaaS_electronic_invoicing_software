@@ -3,6 +3,7 @@
  *
  * Rotas espelhadas de `auth_service/routes/user/user_rooter.php`:
  *   - GET  /v1/users/list           -> listar (paginado; envelope `{data, meta}`)
+ *   - POST /v1/users                -> criar (StoreUserRequest; multipart)
  *   - POST /v1/users/update/{id}    -> atualizar um utilizador
  *   - PUT  /v1/users/active         -> ativar  (`{ ids: [...] }`)
  *   - PUT  /v1/users/desactive      -> desativar (`{ ids: [...] }`)
@@ -12,8 +13,8 @@
 
 import { authApi } from '../../../lib/api';
 import type { UserResource } from '../../../services/authService';
-import type { UpdateUserPayload, UserListItem } from '../types/user.types';
-import { buildUserUpdateFormData } from './formData';
+import type { CreateUserPayload, UpdateUserPayload, UserListItem } from '../types/user.types';
+import { buildUserCreateFormData, buildUserUpdateFormData } from './formData';
 
 interface ApiEnvelope<T> {
   success?: boolean;
@@ -77,6 +78,23 @@ export const usersSettingsService = {
     const body = response.data;
     const updated = body?.data ?? (body as unknown as UserResource);
     return mapUserListItem(updated as UserResource);
+  },
+
+  /**
+   * Cria um utilizador (`POST /v1/users`, protegido por `auth:api` +
+   * `role:administrator|super-admin`). Enviado SEMPRE como
+   * `multipart/form-data` — mesma abordagem do `updateUser`.
+   */
+  async createUser(payload: CreateUserPayload): Promise<UserListItem> {
+    const formData = buildUserCreateFormData(payload);
+
+    const response = await authApi.post<ApiEnvelope<UserResource>>('/v1/users', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    const body = response.data;
+    const created = body?.data ?? (body as unknown as UserResource);
+    return mapUserListItem(created as UserResource);
   },
 
   /** Ativa um ou mais utilizadores (`{ ids: [...] }`). */

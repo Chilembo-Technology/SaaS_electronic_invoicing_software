@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Button } from '../../../app/components/ui/button';
 import { Input } from '../../../app/components/ui/input';
 import {
   Select,
@@ -13,6 +14,7 @@ import {
 import { FormAlert } from '../../../components/forms/FormAlert';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
+import { CreateUserModal } from '../components/CreateUserModal';
 import { EditUserModal } from '../components/EditUserModal';
 import { UsersTable } from '../components/UsersTable';
 import { UserStatusToggleModal } from '../components/UserStatusToggleModal';
@@ -21,7 +23,7 @@ import { useUsers } from '../hooks/useUsers';
 import { EMPTY_USERS_FILTERS, type UserListItem, type UsersFilters } from '../types/user.types';
 import { getCompanyId, getUserId, ROLE_OPTIONS } from '../utils/session';
 
-/** Sub-página "Utilizadores": listagem + filtros + editar/ativar/desativar. */
+/** Sub-página "Utilizadores": criação, listagem, filtros + editar/ativar/desativar. */
 export function UsersSettingsPage() {
   useDocumentTitle('Configurações · Utilizadores');
 
@@ -34,6 +36,7 @@ export function UsersSettingsPage() {
 
   const [filters, setFilters] = useState<UsersFilters>(EMPTY_USERS_FILTERS);
   const [editing, setEditing] = useState<UserListItem | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [toggling, setToggling] = useState<UserListItem | null>(null);
 
   const filtered = useMemo(() => {
@@ -65,11 +68,22 @@ export function UsersSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-foreground">Utilizadores</h2>
-        <p className="text-sm text-muted-foreground">
-          Ative, desative e edite os utilizadores da sua empresa.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">Utilizadores</h2>
+          <p className="text-sm text-muted-foreground">
+            Adicione, ative, desative e edite os utilizadores da sua empresa.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="h-11 shrink-0 rounded-xl"
+        >
+          <UserPlus size={16} aria-hidden="true" />
+          Adicionar Utilizador
+        </Button>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -151,6 +165,13 @@ export function UsersSettingsPage() {
           if (!open) setEditing(null);
         }}
         onSaved={() => void refresh()}
+      />
+
+      <CreateUserModal
+        companyId={companyId}
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onCreated={() => void refresh()}
       />
 
       <UserStatusToggleModal

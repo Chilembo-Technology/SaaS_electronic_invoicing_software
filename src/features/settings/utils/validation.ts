@@ -28,7 +28,13 @@ import type {
   ProfileFieldErrors,
   ProfileFormValues,
 } from '../types/profile.types';
-import type { EditUserFieldErrors, EditUserFormValues } from '../types/user.types';
+import type {
+  CreateUserFieldErrors,
+  CreateUserFormValues,
+  EditUserFieldErrors,
+  EditUserFormValues,
+} from '../types/user.types';
+import { CREATE_USER_ROLES } from '../types/user.types';
 
 /** UUID (mesma regra `uuid` do Laravel). */
 export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,6 +63,10 @@ export const SETTINGS_MESSAGES = {
   accountNumberFormat: 'O número da conta deve conter apenas 11 dígitos numéricos.',
   holderMax: 'O titular deve ter no máximo 255 caracteres.',
   ibanFormat: 'Iban inválido. Ex.: 0005.0000.7998.9111.1019.7',
+  photoMimes: 'A foto deve ser um arquivo do tipo: jpeg, png, jpg, gif, bmp, svg, webp ou heic.',
+  photoMax: 'A foto não pode ser maior que 2MB.',
+  roleInvalid: 'A função deve ser "Administrator", "Viewer" ou "Operator".',
+  statusInvalid: 'O status deve ser "active" ou "inactive".',
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -193,4 +203,50 @@ export function validateEditUserFields(values: EditUserFormValues): EditUserFiel
 
 export function hasAnyError(errors: Record<string, string | undefined>): boolean {
   return Object.values(errors).some(Boolean);
+}
+
+/** Extensões aceites para `photo` no `StoreUserRequest` (`mimes:…,heic`). */
+export const PHOTO_ALLOWED_EXTENSIONS = ['jpeg', 'png', 'jpg', 'gif', 'bmp', 'svg', 'webp', 'heic'];
+/** `max:2048` (KB) do `StoreUserRequest`. */
+export const PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+/** Atributo `accept` do `<input type="file">` da fotografia. */
+export const PHOTO_ACCEPT_ATTRIBUTE =
+  'image/jpeg,image/png,image/gif,image/bmp,image/svg+xml,image/webp,image/heic';
+
+/** Valida a fotografia opcional (mesmas mimes/max do backend). */
+export function validateCreateUserPhoto(file: File | null): string | undefined {
+  if (!file) return undefined;
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  if (!PHOTO_ALLOWED_EXTENSIONS.includes(extension)) return SETTINGS_MESSAGES.photoMimes;
+  if (file.size > PHOTO_MAX_BYTES) return SETTINGS_MESSAGES.photoMax;
+  return undefined;
+}
+
+/**
+ * Valida o formulário de CRIAÇÃO (`StoreUserRequest`).
+ * Diferenças face à edição: `password` e `bi_number` são OBRIGATÓRIOS e há
+ * validação de `role`/`status`. Os `unique` (email/telefone/BI) só existem no
+ * servidor — chegam como 422 e são mapeados em `fieldErrors`.
+ */
+export function validateCreateUserFields(values: CreateUserFormValues): CreateUserFieldErrors {
+  const errors = validateProfileFields({
+    first_name: values.first_name,
+    last_name: values.last_name,
+    email: values.email,
+    phone_number: values.phone_number,
+    bi_number: values.bi_number,
+  }) as CreateUserFieldErrors;
+
+  // No criação o BI é obrigatório (`validateProfileFields` só valida se preenchido).
+  if (!values.bi_number.trim()) errors.bi_number = MESSAGES.biRequired;
+
+  if (!values.password) errors.password = SETTINGS_MESSAGES.passwordRequired;
+  else if (values.password.length < COMPANY_PASSWORD_MIN) errors.password = SETTINGS_MESSAGES.passwordMin;
+
+  if (!CREATE_USER_ROLES.includes(values.role)) errors.role = SETTINGS_MESSAGES.roleInvalid;
+  if (values.status !== 'active' && values.status !== 'inactive') {
+    errors.status = SETTINGS_MESSAGES.statusInvalid;
+  }
+
+  return errors;
 }

@@ -8,7 +8,7 @@
 
 import type { UpdateCompanyPayload } from '../types/company.types';
 import type { UpdateProfilePayload } from '../types/profile.types';
-import type { UpdateUserPayload } from '../types/user.types';
+import type { CreateUserPayload, UpdateUserPayload } from '../types/user.types';
 
 export function appendIfPresent(form: FormData, key: string, value?: string | null): void {
   if (value === undefined || value === null) return;
@@ -73,6 +73,29 @@ export function buildUserUpdateFormData(
   if (options?.includeStatus && 'status' in payload) {
     appendIfPresent(form, 'status', (payload as UpdateUserPayload).status);
   }
+
+  appendFileIfPresent(form, 'photo', payload.photo);
+
+  return form;
+}
+
+/**
+ * `POST /v1/users` — SEMPRE multipart, mesmo caminho do update. Campos vazios
+ * são omitidos (a validação client-side já garante os obrigatórios); sem foto o
+ * campo `photo` não entra e o backend trata `nullable`.
+ */
+export function buildUserCreateFormData(payload: CreateUserPayload): FormData {
+  const form = new FormData();
+
+  appendIfPresent(form, 'first_name', payload.first_name);
+  appendIfPresent(form, 'last_name', payload.last_name);
+  appendIfPresent(form, 'email', payload.email);
+  appendIfPresent(form, 'password', payload.password);
+  appendIfPresent(form, 'phone_number', payload.phone_number);
+  appendIfPresent(form, 'bi_number', payload.bi_number);
+  appendIfPresent(form, 'company_id', payload.company_id);
+  appendIfPresent(form, 'role', payload.role);
+  appendIfPresent(form, 'status', payload.status);
 
   appendFileIfPresent(form, 'photo', payload.photo);
 
