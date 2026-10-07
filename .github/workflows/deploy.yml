@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm run test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /opt/chilembo/saas_electronic_invoicing/frontend/SaaS_electronic_invoicing_software
+
+            echo "▶ A fazer git pull..."
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "▶ A reconstruir e subir frontend..."
+            docker compose -f docker-compose.prod.yml up -d --build
+
+            echo "✅ Deploy concluído em $(date)"
