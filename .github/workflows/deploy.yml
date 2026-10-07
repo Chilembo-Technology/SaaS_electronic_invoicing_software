@@ -33,9 +33,17 @@ jobs:
             set -e
             cd /opt/chilembo/saas_electronic_invoicing/frontend/SaaS_electronic_invoicing_software
 
+            # ← NOVO: backup antes do reset
+            cp docker-compose.yml /tmp/dc-dev.yml 2>/dev/null || true
+            cp docker-compose.prod.yml /tmp/dc-prod.yml 2>/dev/null || true
+
             echo "▶ A fazer git pull..."
             git fetch origin
             git reset --hard origin/main
+
+            # ← NOVO: restore depois do reset
+            cp /tmp/dc-dev.yml docker-compose.yml 2>/dev/null || true
+            cp /tmp/dc-prod.yml docker-compose.prod.yml 2>/dev/null || true
 
             echo "▶ A reconstruir e subir frontend..."
             docker compose -f docker-compose.prod.yml up -d --build
