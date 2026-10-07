@@ -1,0 +1,25 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: chilembo-frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - VITE_DEV_AUTH_TARGET=http://chilembo-saas-faturacao-auth-dev:8000
+      - VITE_DEV_ORGANIZATION_TARGET=http://chilembo-saas-faturacao-organization-dev:8000
+      - VITE_CORE_DATA_API_URL=http://host.docker.internal:8003/api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    networks:
+      - shared-services-network
+
+networks:
+  shared-services-network:
+    external: true
+    name: shared-services-network

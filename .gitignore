@@ -5,3 +5,5 @@
 
 # Backups dos ficheiros Docker antigos (Passo 2 do setup Docker)
 *.old
+
+docker-compose.yml
