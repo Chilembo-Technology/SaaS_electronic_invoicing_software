@@ -25,7 +25,7 @@ const navigation = [
   { name: "Início", href: "/", icon: Home },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Clientes", href: "/clientes", icon: Users },
-  { name: "Produtos", href: "/produtos", icon: Package },
+  { name: "Produtos", href: "/products", icon: Package },
   { name: "Faturas", href: "/invoices", icon: FileText },
   { name: "Motivos de Isenção", href: "/vat-exemptions", icon: Tag },
   { name: "Impostos", href: "/taxes", icon: Percent },

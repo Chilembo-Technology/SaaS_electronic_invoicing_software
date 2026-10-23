@@ -29,6 +29,10 @@ import { VatExemptionFormPage } from "../features/vat-exemptions/pages/VatExempt
 import { TaxListPage } from "../features/taxes/pages/TaxListPage";
 import { TaxFormPage } from "../features/taxes/pages/TaxFormPage";
 
+// Páginas da funcionalidade de Produtos (fiscal_core) — rota em inglês.
+import { ProductListPage } from "../features/products/pages/ProductListPage";
+import { ProductFormPage } from "../features/products/pages/ProductFormPage";
+
 // Páginas públicas (utilizadores NÃO autenticados)
 import { LandingPage } from "../features/landing/pages/LandingPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
@@ -133,6 +137,18 @@ export const router = createBrowserRouter([
       {
         path: "taxes/:id/edit",
         Component: TaxFormPage,
+      },
+      {
+        path: "products",
+        Component: ProductListPage,
+      },
+      {
+        path: "products/create",
+        Component: ProductFormPage,
+      },
+      {
+        path: "products/:id/edit",
+        Component: ProductFormPage,
       },
       {
         path: "relatorios",
