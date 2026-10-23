@@ -33,6 +33,10 @@ import { TaxFormPage } from "../features/taxes/pages/TaxFormPage";
 import { ProductListPage } from "../features/products/pages/ProductListPage";
 import { ProductFormPage } from "../features/products/pages/ProductFormPage";
 
+// Páginas da funcionalidade de Clientes (fiscal_core) — rota em inglês.
+import { CustomerListPage } from "../features/customers/pages/CustomerListPage";
+import { CustomerFormPage } from "../features/customers/pages/CustomerFormPage";
+
 // Páginas públicas (utilizadores NÃO autenticados)
 import { LandingPage } from "../features/landing/pages/LandingPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
@@ -111,7 +115,7 @@ export const router = createBrowserRouter([
         Component: InvoiceListPage,
       },
       {
-        path: "invoices/create",
+        path: "invoices/create/:type",
         Component: InvoiceCreatePage,
       },
       {
@@ -149,6 +153,18 @@ export const router = createBrowserRouter([
       {
         path: "products/:id/edit",
         Component: ProductFormPage,
+      },
+      {
+        path: "customers",
+        Component: CustomerListPage,
+      },
+      {
+        path: "customers/create",
+        Component: CustomerFormPage,
+      },
+      {
+        path: "customers/:id/edit",
+        Component: CustomerFormPage,
       },
       {
         path: "relatorios",

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Download, FilePlus2, FileText, Loader2, RotateCw } from 'lucide-react';
+import { ChevronDown, Download, FilePlus2, FileText, Loader2, RotateCw } from 'lucide-react';
 
 import { Badge } from '../../../app/components/ui/badge';
 import { Button } from '../../../app/components/ui/button';
@@ -29,7 +29,19 @@ import {
 } from '../../../app/components/ui/table';
 import { FormAlert } from '../../../components/forms/FormAlert';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
-import { INVOICE_TYPE_OPTIONS, invoiceTypeLabel } from '../constants';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../../app/components/ui/dropdown-menu';
+import {
+  CREATE_INVOICE_TYPE_OPTIONS,
+  INVOICE_TYPE_OPTIONS,
+  invoiceTypeLabel,
+} from '../constants';
 import { useInvoices } from '../hooks/useInvoices';
 import type { Invoice } from '../types';
 
@@ -104,12 +116,26 @@ export function InvoiceListPage() {
             Lista de documentos fiscais da sua empresa.
           </p>
         </div>
-        <Button asChild>
-          <Link to="/invoices/create">
-            <FilePlus2 className="size-4" aria-hidden="true" />
-            Emitir fatura
-          </Link>
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <FilePlus2 className="size-4" aria-hidden="true" />
+              Novo documento
+              <ChevronDown className="size-4" aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Emitir documento</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {CREATE_INVOICE_TYPE_OPTIONS.map((option) => (
+              <DropdownMenuItem key={option.value} asChild>
+                <Link to={`/invoices/create/${option.value}`}>
+                  {option.label}
+                </Link>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <Card>
         <CardHeader>
@@ -193,7 +219,7 @@ export function InvoiceListPage() {
                 Nenhuma fatura encontrada.
               </p>
               <Button asChild variant="outline">
-                <Link to="/invoices/create">Emitir a primeira fatura</Link>
+                <Link to="/invoices/create/FT">Emitir o primeiro documento</Link>
               </Button>
             </div>
           ) : (

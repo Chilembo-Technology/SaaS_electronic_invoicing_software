@@ -4,7 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { normalizeApiError } from '../../../features/auth/utils/apiError';
 import { getCompanyId } from '../../settings/utils/session';
 import { invoiceService } from '../services/invoiceService';
-import type { CreateInvoicePayload, Invoice } from '../types';
+import type { CreateInvoicePayload, Invoice, InvoiceType } from '../types';
 
 /** Mapa `campo_do_backend -> campo_do_formulário` para os erros 422 de topo. */
 const FIELD_MAP: Record<string, string> = {
@@ -13,11 +13,25 @@ const FIELD_MAP: Record<string, string> = {
   customer_tax_id: 'customerTaxId',
   invoice_date: 'invoiceDate',
   eac_code: 'eacCode',
+  operation_type: 'operationType',
+  rectification_reason: 'rectificationReason',
+  source_document: 'sourceDocument',
+  invoice_reference: 'invoiceReference',
+  tax_total: 'taxTotal',
+  invoice_total: 'invoiceTotal',
+  retention_amount: 'retentionAmount',
+  amount_paid: 'amountPaid',
+  amount_due: 'amountDue',
+  payment_mechanism: 'paymentMechanism',
+  origin_city: 'originCity',
+  origin_address: 'originAddress',
+  destination_city: 'destinationCity',
+  destination_address: 'destinationAddress',
 };
 
 /**
- * Submissão de uma nova factura (FT). Expõe o estado de carregamento, o erro
- * global, os erros por campo (422) e a factura criada (para o ecrã de sucesso).
+ * Submissão de um novo documento fiscal. Expõe o estado de carregamento, o erro
+ * global, os erros por campo (422) e o documento criado (para o ecrã de sucesso).
  */
 export function useCreateInvoice() {
   const { user } = useAuth();
@@ -30,6 +44,7 @@ export function useCreateInvoice() {
 
   const createInvoice = async (
     payload: CreateInvoicePayload,
+    type: InvoiceType = 'FT',
   ): Promise<Invoice | null> => {
     if (!companyId) {
       setError('Não foi possível identificar a empresa da sessão.');
@@ -42,7 +57,7 @@ export function useCreateInvoice() {
     setCreatedInvoice(null);
 
     try {
-      const invoice = await invoiceService.createInvoice(companyId, payload, 'FT');
+      const invoice = await invoiceService.createInvoice(companyId, payload, type);
       setCreatedInvoice(invoice);
       return invoice;
     } catch (err) {

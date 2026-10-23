@@ -42,6 +42,13 @@ const INVOICE_TYPE_ENDPOINTS: Record<string, string> = {
   RG: '/invoices/receipt',
   GT: '/invoices/transport-guide',
   GR: '/invoices/delivery-note',
+  GF: '/invoices/generic-invoice',
+  FG: '/invoices/global-invoice',
+  AC: '/invoices/payment-notice',
+  AR: '/invoices/payment-notice-receipt',
+  AF: '/invoices/self-billing',
+  TV: '/invoices/sales-slip',
+  NL: '/invoices/settlement-note',
 };
 
 export const invoiceService = {
@@ -70,7 +77,7 @@ export const invoiceService = {
     return body.data ?? (body as unknown as Invoice);
   },
 
-  /** Cria um documento fiscal (default FT — factura). */
+  /** Cria um documento fiscal do tipo indicado (default FT — factura). */
   async createInvoice(
     companyId: string,
     payload: CreateInvoicePayload,

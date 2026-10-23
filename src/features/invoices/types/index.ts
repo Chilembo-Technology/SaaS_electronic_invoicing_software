@@ -27,6 +27,9 @@ export type InvoiceType =
 
 export type TaxType = 'IVA' | 'IS' | 'NS';
 
+/** Tipo de operação de uma nota de crédito (CreateCreditNoteRequest). */
+export type CreditNoteOperationType = 'Rectificação' | 'Anulação';
+
 /** Linha de documento devolvida pelo `InvoiceResource`. */
 export interface InvoiceLine {
   line_number?: number;
@@ -122,25 +125,46 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta;
 }
 
-/** Linha de documento enviada ao criar uma factura (payload do POST). */
+/** Linha de documento enviada ao criar um documento (payload do POST). */
 export interface CreateInvoiceLine {
   product_code: string;
   product_description: string;
   quantity: number;
   unit_of_measure?: string;
-  unit_price: number;
+  /** Preço unitário — usado pelos documentos "com linhas" (FT, FR, PP, OR, …). */
+  unit_price?: number;
+  /** Valor total da linha — usado por guias de transporte/remessa (GT, GR). */
+  credit_amount?: number;
   description?: string;
   tax_type?: TaxType;
   tax_code?: string;
   tax_percentage?: number;
 }
 
-/** Payload do pedido de criação de factura (CreateInvoiceDTO). */
+/** Payload do pedido de criação de documento (um dos request DTOs do fiscal_core). */
 export interface CreateInvoicePayload {
   customer_code: string;
   customer_name?: string;
   customer_tax_id?: string;
   invoice_date: string;
   eac_code?: string;
-  lines: CreateInvoiceLine[];
+  /** Obrigatório para documentos com linhas; omitido no recibo (RG). */
+  lines?: CreateInvoiceLine[];
+  /** Nota de crédito (NC). */
+  operation_type?: CreditNoteOperationType;
+  rectification_reason?: string;
+  source_document?: string;
+  /** Recibo (RG). */
+  invoice_reference?: string;
+  tax_total?: number;
+  invoice_total?: number;
+  retention_amount?: number;
+  amount_paid?: number;
+  amount_due?: number;
+  payment_mechanism?: string;
+  /** Guia de transporte (GT). */
+  origin_city?: string;
+  origin_address?: string;
+  destination_city?: string;
+  destination_address?: string;
 }

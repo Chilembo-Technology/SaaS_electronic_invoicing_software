@@ -24,7 +24,7 @@ const navigation = [
   // Link para a página inicial pública — visível também com sessão iniciada.
   { name: "Início", href: "/", icon: Home },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Clientes", href: "/clientes", icon: Users },
+  { name: "Clientes", href: "/customers", icon: Users },
   { name: "Produtos", href: "/products", icon: Package },
   { name: "Faturas", href: "/invoices", icon: FileText },
   { name: "Motivos de Isenção", href: "/vat-exemptions", icon: Tag },
