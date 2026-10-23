@@ -4,7 +4,6 @@ import { Dashboard } from "./pages/Dashboard";
 import { Clientes } from "./pages/Clientes";
 import { Produtos } from "./pages/Produtos";
 import { EmitirFatura } from "./pages/EmitirFatura";
-import { Faturas } from "./pages/Faturas";
 import { Relatorios } from "./pages/Relatorios";
 import { Usuarios } from "./pages/Usuarios";
 import { Empresas } from "./pages/Empresas";
@@ -17,6 +16,14 @@ import { CompanySettingsPage } from "../features/settings/pages/CompanySettingsP
 import { ProfileSettingsPage } from "../features/settings/pages/ProfileSettingsPage";
 import { UsersSettingsPage } from "../features/settings/pages/UsersSettingsPage";
 import { RequireAdmin, RequireAuth } from "../features/settings/components/RouteGuards";
+
+// Páginas da funcionalidade de Faturas (fiscal_core) — rota em inglês.
+import { InvoiceCreatePage } from "../features/invoices/pages/InvoiceCreatePage";
+import { InvoiceListPage } from "../features/invoices/pages/InvoiceListPage";
+
+// Páginas da funcionalidade de Motivos de Isenção (fiscal_core) — rota em inglês.
+import { VatExemptionListPage } from "../features/vat-exemptions/pages/VatExemptionListPage";
+import { VatExemptionFormPage } from "../features/vat-exemptions/pages/VatExemptionFormPage";
 
 // Páginas públicas (utilizadores NÃO autenticados)
 import { LandingPage } from "../features/landing/pages/LandingPage";
@@ -92,12 +99,24 @@ export const router = createBrowserRouter([
         Component: Produtos,
       },
       {
-        path: "faturas",
-        Component: Faturas,
+        path: "invoices",
+        Component: InvoiceListPage,
       },
       {
-        path: "faturas/emitir",
-        Component: EmitirFatura,
+        path: "invoices/create",
+        Component: InvoiceCreatePage,
+      },
+      {
+        path: "vat-exemptions",
+        Component: VatExemptionListPage,
+      },
+      {
+        path: "vat-exemptions/create",
+        Component: VatExemptionFormPage,
+      },
+      {
+        path: "vat-exemptions/:code/edit",
+        Component: VatExemptionFormPage,
       },
       {
         path: "relatorios",

@@ -44,7 +44,7 @@ describe('usersSettingsService.listUsers', () => {
   });
 });
 
-describe('usersSettingsService.activate/deactivate', () => {
+describe('usersSettingsService.activate/desactivate', () => {
   it('envia `{ ids: [id] }` para ativar', async () => {
     mocks.put.mockResolvedValueOnce({ data: {} });
     await usersSettingsService.activateUsers(['u1']);

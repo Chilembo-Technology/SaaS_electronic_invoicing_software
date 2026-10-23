@@ -44,6 +44,16 @@ const DEFAULT_API_ROOT = '/api';
  */
 const DEFAULT_CORE_DATA_API_ROOT = 'http://localhost:8003/api';
 
+/**
+ * Raiz do fiscal_core (facturação electrónica) — serviço à parte, publicado na
+ * porta 8004. Os endpoints vivem sob `/api/v1/invoices` (ver
+ * `fiscal_core/routes/invoice_rooter/invoice_rooter.php`).
+ *
+ * Tal como o `coreDataApi`, não passa pelo proxy relativo `/api` (que só
+ * encaminha auth e organization), pelo que o default é absoluto.
+ */
+const DEFAULT_FISCAL_API_ROOT = 'http://localhost:8004/api/v1';
+
 /** Tempo máximo (ms) por pedido — evita pedidos "pendurados" e dá erro de rede tratável. */
 const REQUEST_TIMEOUT = 20000;
 
@@ -80,6 +90,19 @@ export const coreDataApi: AxiosInstance = axios.create({
   timeout: REQUEST_TIMEOUT,
 });
 
+/**
+ * Cliente do fiscal_core — documentos fiscais (faturas, proformas, recibos…).
+ * Partilha o interceptor de token (JWT) e o de 401 com o `authApi`/`orgApi`.
+ */
+export const fiscalApi: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_FISCAL_API_URL || DEFAULT_FISCAL_API_ROOT,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  timeout: REQUEST_TIMEOUT,
+});
+
 const attachAuthTokenInterceptor = (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
   const token = getStoredToken();
   if (token && config.headers) {
@@ -90,6 +113,7 @@ const attachAuthTokenInterceptor = (config: InternalAxiosRequestConfig): Interna
 
 authApi.interceptors.request.use(attachAuthTokenInterceptor, (error) => Promise.reject(error));
 orgApi.interceptors.request.use(attachAuthTokenInterceptor, (error) => Promise.reject(error));
+fiscalApi.interceptors.request.use(attachAuthTokenInterceptor, (error) => Promise.reject(error));
 
 /**
  * Endpoints públicos do fluxo de entrada: um 401 aqui é regra de negócio
@@ -122,3 +146,4 @@ const handleUnauthorizedInterceptor = (error: unknown) => {
 
 authApi.interceptors.response.use((response) => response, handleUnauthorizedInterceptor);
 orgApi.interceptors.response.use((response) => response, handleUnauthorizedInterceptor);
+fiscalApi.interceptors.response.use((response) => response, handleUnauthorizedInterceptor);
