@@ -116,12 +116,14 @@ export function CustomerFormPage() {
             <CardDescription>Os campos com * são obrigatórios.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-2 rounded-xl border border-border bg-card p-6 shadow-sm">
               <div className="space-y-1.5">
                 <Label htmlFor="customer_code">
                   Código do cliente <span className="text-destructive">*</span>
                 </Label>
                 <Input
+
+                  className="bg-muted border-none"
                   id="customer_code"
                   value={values.customer_code}
                   placeholder="Ex.: CL-001"
@@ -142,6 +144,7 @@ export function CustomerFormPage() {
                   NIF <span className="text-destructive">*</span>
                 </Label>
                 <Input
+                  className="bg-muted border-none"
                   id="customer_tax_id"
                   value={values.customer_tax_id}
                   placeholder="Ex.: 5001234567"
@@ -162,6 +165,7 @@ export function CustomerFormPage() {
                   Nome do cliente <span className="text-destructive">*</span>
                 </Label>
                 <Input
+                  className="bg-muted border-none"
                   id="company_name"
                   value={values.company_name}
                   placeholder="Razão social ou nome do cliente"
@@ -187,7 +191,7 @@ export function CustomerFormPage() {
                     setField('type', value === NO_TYPE ? '' : (value as CustomerType))
                   }
                 >
-                  <SelectTrigger id="type" aria-invalid={Boolean(fieldErrors.type)}>
+                  <SelectTrigger className="bg-muted border-none" id="type" aria-invalid={Boolean(fieldErrors.type)}>
                     <SelectValue placeholder="Selecionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -218,6 +222,8 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="contact">Pessoa de contacto</Label>
                 <Input
+                  placeholder="Nome da pessoa de contacto"
+                  className="bg-muted border-none"
                   id="contact"
                   value={values.contact}
                   maxLength={50}
@@ -233,6 +239,8 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
                 <Input
+
+                  className="bg-muted border-none"
                   id="email"
                   type="email"
                   value={values.email}
@@ -250,6 +258,8 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="telephone">Telefone</Label>
                 <Input
+                  placeholder="923XXXXXX"
+                  className="bg-muted border-none"
                   id="telephone"
                   value={values.telephone}
                   maxLength={20}
@@ -265,9 +275,11 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="fax">Fax</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="fax"
                   value={values.fax}
                   maxLength={20}
+                  placeholder="923XXXXXX"
                   aria-invalid={Boolean(fieldErrors.fax)}
                   aria-describedby={fieldErrors.fax ? 'fax-error' : undefined}
                   onChange={(event) => setField('fax', event.target.value)}
@@ -280,6 +292,7 @@ export function CustomerFormPage() {
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="website">Website</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="website"
                   value={values.website}
                   maxLength={60}
@@ -306,6 +319,7 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="billing_building_number">Número da porta</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="billing_building_number"
                   value={values.billing_building_number}
                   maxLength={15}
@@ -330,6 +344,7 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="billing_street_name">Nome da rua</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="billing_street_name"
                   value={values.billing_street_name}
                   maxLength={200}
@@ -378,6 +393,8 @@ export function CustomerFormPage() {
                   Cidade <span className="text-destructive">*</span>
                 </Label>
                 <Input
+                  placeholder="Luanda"
+                  className="bg-muted border-none"
                   id="billing_city"
                   value={values.billing_city}
                   maxLength={50}
@@ -393,6 +410,7 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="billing_postal_code">Código postal</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="billing_postal_code"
                   value={values.billing_postal_code}
                   maxLength={20}
@@ -413,6 +431,8 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="billing_province">Província</Label>
                 <Input
+                  placeholder="Luanda"
+                  className="bg-muted border-none"
                   id="billing_province"
                   value={values.billing_province}
                   maxLength={50}
@@ -430,6 +450,8 @@ export function CustomerFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="billing_country">País</Label>
                 <Input
+                  placeholder="AO"
+                  className="bg-muted border-none"
                   id="billing_country"
                   value={values.billing_country}
                   maxLength={12}
@@ -462,7 +484,7 @@ export function CustomerFormPage() {
                     setField('self_billing_indicator', value === 'true')
                   }
                 >
-                  <SelectTrigger id="self_billing_indicator">
+                  <SelectTrigger className="bg-muted border-none" id="self_billing_indicator">
                     <SelectValue placeholder="Selecionar" />
                   </SelectTrigger>
                   <SelectContent>
@@ -476,10 +498,11 @@ export function CustomerFormPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="is_active">Estado inicial</Label>
                   <Select
+
                     value={values.is_active ? 'true' : 'false'}
                     onValueChange={(value) => setField('is_active', value === 'true')}
                   >
-                    <SelectTrigger id="is_active">
+                    <SelectTrigger className="bg-muted border-none" id="is_active">
                       <SelectValue placeholder="Selecionar estado" />
                     </SelectTrigger>
                     <SelectContent>
