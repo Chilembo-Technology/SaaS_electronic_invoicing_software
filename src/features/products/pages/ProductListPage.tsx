@@ -34,11 +34,10 @@ const ALL = 'all';
 function StatusBadge({ active }: { active: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-        active
-          ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
-          : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
-      }`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${active
+        ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
+        : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
+        }`}
     >
       <span
         className={`size-1.5 rounded-full ${active ? 'bg-brand-green' : 'bg-muted-foreground'}`}
@@ -139,7 +138,7 @@ export function ProductListPage() {
                 <Input
                   id="search"
                   placeholder="Código, descrição ou grupo…"
-                  className="pl-8"
+                  className="pl-8 bg-muted border-none"
                   value={draftSearch}
                   onChange={(event) => setDraftSearch(event.target.value)}
                 />
@@ -152,7 +151,7 @@ export function ProductListPage() {
                 value={draftType}
                 onValueChange={(value) => setDraftType(value as 'all' | ProductType)}
               >
-                <SelectTrigger id="type">
+                <SelectTrigger className="bg-muted border-none" id="type">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -169,7 +168,7 @@ export function ProductListPage() {
             <div className="space-y-2">
               <Label htmlFor="category">Categoria</Label>
               <Select value={draftCategory} onValueChange={setDraftCategory}>
-                <SelectTrigger id="category">
+                <SelectTrigger className="bg-muted border-none" id="category">
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,7 +190,7 @@ export function ProductListPage() {
                   setDraftStatus(value as 'all' | ProductStatusFilter)
                 }
               >
-                <SelectTrigger id="status">
+                <SelectTrigger className="bg-muted border-none" id="status">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>

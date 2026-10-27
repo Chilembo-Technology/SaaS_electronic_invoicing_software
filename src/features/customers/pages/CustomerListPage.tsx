@@ -33,11 +33,10 @@ const ALL = 'all';
 function StatusBadge({ active }: { active: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-        active
-          ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
-          : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
-      }`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${active
+        ? 'border-brand-green/30 bg-brand-green/10 text-brand-green'
+        : 'border-muted-foreground/30 bg-muted/40 text-muted-foreground'
+        }`}
     >
       <span
         className={`size-1.5 rounded-full ${active ? 'bg-brand-green' : 'bg-muted-foreground'}`}
@@ -121,7 +120,7 @@ export function CustomerListPage() {
                 <Input
                   id="search"
                   placeholder="Nome, NIF ou código…"
-                  className="pl-8"
+                  className="pl-8 bg-muted border-nonesss"
                   value={draftSearch}
                   onChange={(event) => setDraftSearch(event.target.value)}
                 />
@@ -134,7 +133,7 @@ export function CustomerListPage() {
                 value={draftType}
                 onValueChange={(value) => setDraftType(value as 'all' | CustomerType)}
               >
-                <SelectTrigger id="type">
+                <SelectTrigger className="bg-muted border-none" id="type">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,7 +155,7 @@ export function CustomerListPage() {
                   setDraftStatus(value as 'all' | CustomerStatusFilter)
                 }
               >
-                <SelectTrigger id="status">
+                <SelectTrigger className="bg-muted border-none" id="status">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>

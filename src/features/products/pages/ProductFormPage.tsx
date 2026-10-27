@@ -131,7 +131,7 @@ export function ProductFormPage() {
                     setField('product_type', value === NO_TYPE ? '' : (value as ProductType))
                   }
                 >
-                  <SelectTrigger id="product_type" aria-invalid={Boolean(fieldErrors.product_type)}>
+                  <SelectTrigger className="bg-muted border-none" id="product_type" aria-invalid={Boolean(fieldErrors.product_type)}>
                     <SelectValue placeholder="Selecionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -151,6 +151,7 @@ export function ProductFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="product_code">Código</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="product_code"
                   value={values.product_code}
                   maxLength={60}
@@ -167,6 +168,7 @@ export function ProductFormPage() {
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="product_description">Descrição</Label>
                 <Textarea
+                  className="bg-muted border-none"
                   id="product_description"
                   value={values.product_description}
                   rows={3}
@@ -189,6 +191,7 @@ export function ProductFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="product_group">Grupo</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="product_group"
                   value={values.product_group}
                   maxLength={50}
@@ -209,7 +212,7 @@ export function ProductFormPage() {
                     setField('category_id', value === NO_CATEGORY ? '' : value)
                   }
                 >
-                  <SelectTrigger id="category_id">
+                  <SelectTrigger className="bg-muted border-none" id="category_id">
                     <SelectValue placeholder="Sem categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -228,6 +231,7 @@ export function ProductFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="product_number_code">Código numérico (EAN)</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="product_number_code"
                   value={values.product_number_code}
                   maxLength={60}
@@ -250,6 +254,7 @@ export function ProductFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="un_number">Número ONU</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="un_number"
                   value={values.un_number}
                   maxLength={6}
@@ -269,6 +274,7 @@ export function ProductFormPage() {
                   onValueChange={(value) => setField('unit_of_measure', value)}
                 >
                   <SelectTrigger
+                    className="bg-muted border-none"
                     id="unit_of_measure"
                     aria-invalid={Boolean(fieldErrors.unit_of_measure)}
                   >
@@ -290,6 +296,7 @@ export function ProductFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="unit_price">Preço unitário (Kz)</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="unit_price"
                   type="number"
                   inputMode="decimal"
@@ -308,6 +315,7 @@ export function ProductFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="expiration_date">Data de validade</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="expiration_date"
                   type="date"
                   value={values.expiration_date}
@@ -322,6 +330,7 @@ export function ProductFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="image">Imagem (opcional)</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="image"
                   type="file"
                   accept="image/jpeg,image/png,image/jpg,image/webp"
@@ -349,7 +358,7 @@ export function ProductFormPage() {
                     value={values.is_active ? 'true' : 'false'}
                     onValueChange={(value) => setField('is_active', value === 'true')}
                   >
-                    <SelectTrigger id="is_active">
+                    <SelectTrigger className="bg-muted border-none" id="is_active">
                       <SelectValue placeholder="Selecionar estado" />
                     </SelectTrigger>
                     <SelectContent>

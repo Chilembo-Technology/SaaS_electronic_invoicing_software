@@ -138,7 +138,7 @@ export function TaxFormPage() {
                   }
                   disabled={isEdit}
                 >
-                  <SelectTrigger id="tax_type" aria-invalid={Boolean(fieldErrors.tax_type)}>
+                  <SelectTrigger className="bg-muted border-none"  id="tax_type" aria-invalid={Boolean(fieldErrors.tax_type)}>
                     <SelectValue placeholder="Selecionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -162,6 +162,7 @@ export function TaxFormPage() {
                 </Label>
                 {values.tax_type === 'IS' ? (
                   <Input
+                    className="bg-muted border-none"
                     id="tax_code"
                     value={values.tax_code}
                     placeholder="Verba do Imposto do Selo"
@@ -176,7 +177,7 @@ export function TaxFormPage() {
                     onValueChange={(value) => setField('tax_code', value)}
                     disabled={isEdit}
                   >
-                    <SelectTrigger id="tax_code" aria-invalid={Boolean(fieldErrors.tax_code)}>
+                    <SelectTrigger className="bg-muted border-none" id="tax_code" aria-invalid={Boolean(fieldErrors.tax_code)}>
                       <SelectValue placeholder="Selecionar código" />
                     </SelectTrigger>
                     <SelectContent>
@@ -188,7 +189,7 @@ export function TaxFormPage() {
                     </SelectContent>
                   </Select>
                 ) : (
-                  <Input id="tax_code" disabled placeholder="Selecionar primeiro o tipo" />
+                  <Input className="bg-muted border-none" id="tax_code" disabled placeholder="Selecionar primeiro o tipo" />
                 )}
                 {fieldErrors.tax_code ? (
                   <FieldError id="tax_code-error" message={fieldErrors.tax_code} />
@@ -208,6 +209,7 @@ export function TaxFormPage() {
                   disabled={isEdit}
                 >
                   <SelectTrigger
+                    className="bg-muted border-none"
                     id="tax_country_region"
                     aria-invalid={Boolean(fieldErrors.tax_country_region)}
                   >
@@ -233,6 +235,7 @@ export function TaxFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="tax_expiration_date">Data de expiração</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="tax_expiration_date"
                   type="date"
                   value={values.tax_expiration_date}
@@ -250,6 +253,7 @@ export function TaxFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="tax_percentage">Percentagem (%)</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="tax_percentage"
                   type="number"
                   inputMode="decimal"
@@ -276,6 +280,7 @@ export function TaxFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="tax_amount">Montante fixo (Kz)</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="tax_amount"
                   type="number"
                   inputMode="decimal"
@@ -303,7 +308,7 @@ export function TaxFormPage() {
                     value={values.is_active ? 'true' : 'false'}
                     onValueChange={(value) => setField('is_active', value === 'true')}
                   >
-                    <SelectTrigger id="is_active">
+                    <SelectTrigger className="bg-muted border-none" id="is_active">
                       <SelectValue placeholder="Selecionar estado" />
                     </SelectTrigger>
                     <SelectContent>
@@ -317,6 +322,7 @@ export function TaxFormPage() {
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="description">Descrição</Label>
                 <Textarea
+                  className="bg-muted border-none"
                   id="description"
                   value={values.description}
                   rows={3}

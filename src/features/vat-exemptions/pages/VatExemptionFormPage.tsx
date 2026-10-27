@@ -125,6 +125,7 @@ export function VatExemptionFormPage() {
                   </span>
                 </Label>
                 <Input
+                  className="bg-muted border-none"
                   id="code"
                   value={values.code}
                   maxLength={3}
@@ -149,6 +150,7 @@ export function VatExemptionFormPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="legal_basis">Base Legal</Label>
                 <Input
+                  className="bg-muted border-none"
                   id="legal_basis"
                   value={values.legal_basis}
                   maxLength={255}
@@ -197,6 +199,7 @@ export function VatExemptionFormPage() {
                 }
               >
                 <SelectTrigger
+                  className="bg-muted border-none"
                   id="exemption_type"
                   aria-invalid={Boolean(fieldErrors.exemption_type)}
                 >
@@ -225,7 +228,7 @@ export function VatExemptionFormPage() {
                 value={values.is_active ? 'true' : 'false'}
                 onValueChange={(value) => setField('is_active', value === 'true')}
               >
-                <SelectTrigger id="is_active">
+                <SelectTrigger className="bg-muted border-none" id="is_active">
                   <SelectValue placeholder="Selecionar estado" />
                 </SelectTrigger>
                 <SelectContent>
