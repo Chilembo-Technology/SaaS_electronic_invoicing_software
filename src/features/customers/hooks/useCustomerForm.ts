@@ -9,8 +9,7 @@ import { customerService } from '../services/customerService';
 import type { CreateCustomerPayload, Customer, CustomerType } from '../types';
 
 /** Estado do formulário de cliente (todos os campos editáveis do backend). */
-export interface CustomerFormValues {
-  customer_code: string;
+export interface CustomerFormValues { 
   customer_tax_id: string;
   company_name: string;
   type: CustomerType | '';
@@ -31,7 +30,7 @@ export interface CustomerFormValues {
 }
 
 export const EMPTY_FORM: CustomerFormValues = {
-  customer_code: '',
+    
   customer_tax_id: '',
   company_name: '',
   type: '',
@@ -56,11 +55,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function validate(values: CustomerFormValues): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (!values.customer_code.trim()) {
-    errors.customer_code = 'O código do cliente é obrigatório.';
-  } else if (values.customer_code.trim().length > 30) {
-    errors.customer_code = 'O código não pode exceder 30 caracteres.';
-  }
+  
 
   if (!values.customer_tax_id.trim()) {
     errors.customer_tax_id = 'O NIF é obrigatório.';
@@ -122,8 +117,7 @@ function validate(values: CustomerFormValues): Record<string, string> {
 
 /** Converte o formulário no payload do backend (strings vazias → `null`). */
 function toPayload(values: CustomerFormValues): CreateCustomerPayload {
-  return {
-    customer_code: values.customer_code.trim().toUpperCase(),
+  return { 
     customer_tax_id: values.customer_tax_id.trim(),
     company_name: values.company_name.trim(),
     type: values.type as CustomerType,
@@ -176,8 +170,7 @@ export function useCustomerForm(id?: string) {
         const record = await customerService.getCustomerById(id);
         if (cancelled) return;
 
-        setValues({
-          customer_code: record.customer_code ?? '',
+        setValues({ 
           customer_tax_id: record.customer_tax_id ?? '',
           company_name: record.company_name ?? '',
           type: record.type ?? '',

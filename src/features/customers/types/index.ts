@@ -57,8 +57,7 @@ export interface PaginatedResponse<T> {
 }
 
 /** Payload de criação (`POST /customers`). */
-export interface CreateCustomerPayload {
-  customer_code: string;
+export interface CreateCustomerPayload { 
   customer_tax_id: string;
   company_name: string;
   type: CustomerType;

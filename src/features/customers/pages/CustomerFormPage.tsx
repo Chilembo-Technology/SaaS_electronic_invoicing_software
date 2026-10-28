@@ -117,48 +117,8 @@ export function CustomerFormPage() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-5 sm:grid-cols-2 rounded-xl border border-border bg-card p-6 shadow-sm">
-              <div className="space-y-1.5">
-                <Label htmlFor="customer_code">
-                  Código do cliente <span className="text-destructive">*</span>
-                </Label>
-                <Input
 
-                  className="bg-muted border-none"
-                  id="customer_code"
-                  value={values.customer_code}
-                  placeholder="Ex.: CL-001"
-                  maxLength={30}
-                  aria-invalid={Boolean(fieldErrors.customer_code)}
-                  aria-describedby={
-                    fieldErrors.customer_code ? 'customer_code-error' : undefined
-                  }
-                  onChange={(event) => setField('customer_code', event.target.value)}
-                />
-                {fieldErrors.customer_code ? (
-                  <FieldError id="customer_code-error" message={fieldErrors.customer_code} />
-                ) : null}
-              </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="customer_tax_id">
-                  NIF <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  className="bg-muted border-none"
-                  id="customer_tax_id"
-                  value={values.customer_tax_id}
-                  placeholder="Ex.: 5001234567"
-                  maxLength={30}
-                  aria-invalid={Boolean(fieldErrors.customer_tax_id)}
-                  aria-describedby={
-                    fieldErrors.customer_tax_id ? 'customer_tax_id-error' : undefined
-                  }
-                  onChange={(event) => setField('customer_tax_id', event.target.value)}
-                />
-                {fieldErrors.customer_tax_id ? (
-                  <FieldError id="customer_tax_id-error" message={fieldErrors.customer_tax_id} />
-                ) : null}
-              </div>
 
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="company_name">
@@ -178,6 +138,26 @@ export function CustomerFormPage() {
                 />
                 {fieldErrors.company_name ? (
                   <FieldError id="company_name-error" message={fieldErrors.company_name} />
+                ) : null}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="customer_tax_id">
+                  NIF <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  className="bg-muted border-none"
+                  id="customer_tax_id"
+                  value={values.customer_tax_id}
+                  placeholder="Ex.: 5001234567"
+                  maxLength={30}
+                  aria-invalid={Boolean(fieldErrors.customer_tax_id)}
+                  aria-describedby={
+                    fieldErrors.customer_tax_id ? 'customer_tax_id-error' : undefined
+                  }
+                  onChange={(event) => setField('customer_tax_id', event.target.value)}
+                />
+                {fieldErrors.customer_tax_id ? (
+                  <FieldError id="customer_tax_id-error" message={fieldErrors.customer_tax_id} />
                 ) : null}
               </div>
 
