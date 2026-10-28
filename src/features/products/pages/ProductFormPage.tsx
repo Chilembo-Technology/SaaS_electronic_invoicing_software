@@ -147,23 +147,7 @@ export function ProductFormPage() {
                   <FieldError id="product_type-error" message={fieldErrors.product_type} />
                 ) : null}
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="product_code">Código</Label>
-                <Input
-                  className="bg-muted border-none"
-                  id="product_code"
-                  value={values.product_code}
-                  maxLength={60}
-                  placeholder="Ex.: PROD-001"
-                  aria-invalid={Boolean(fieldErrors.product_code)}
-                  aria-describedby={fieldErrors.product_code ? 'product_code-error' : undefined}
-                  onChange={(event) => setField('product_code', event.target.value)}
-                />
-                {fieldErrors.product_code ? (
-                  <FieldError id="product_code-error" message={fieldErrors.product_code} />
-                ) : null}
-              </div>
+ 
 
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="product_description">Descrição</Label>

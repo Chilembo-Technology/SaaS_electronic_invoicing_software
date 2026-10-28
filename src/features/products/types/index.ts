@@ -69,7 +69,6 @@ export interface PaginatedResponse<T> {
 /** Campos comuns à criação e à actualização. */
 export interface ProductPayloadBase {
   product_type: ProductType;
-  product_code: string;
   product_group: string | null;
   product_description: string;
   product_number_code: string | null;

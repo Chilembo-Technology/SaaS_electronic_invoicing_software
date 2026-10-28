@@ -42,8 +42,7 @@ function buildProductFormData(
   const form = new FormData();
 
   form.append('company_id', companyId);
-  form.append('product_type', data.product_type);
-  form.append('product_code', data.product_code);
+  form.append('product_type', data.product_type); 
   form.append('product_description', data.product_description);
   form.append('unit_of_measure', data.unit_of_measure);
 

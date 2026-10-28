@@ -9,8 +9,7 @@ import { productService } from '../services/productService';
 import type { Product, ProductType } from '../types';
 
 export interface ProductFormValues {
-  product_type: ProductType | '';
-  product_code: string;
+  product_type: ProductType | ''; 
   product_group: string;
   product_description: string;
   product_number_code: string;
@@ -27,8 +26,7 @@ export interface ProductFormValues {
 }
 
 export const EMPTY_FORM: ProductFormValues = {
-  product_type: '',
-  product_code: '',
+  product_type: '', 
   product_group: '',
   product_description: '',
   product_number_code: '',
@@ -56,12 +54,7 @@ function validate(values: ProductFormValues): Record<string, string> {
   if (!values.product_type) {
     errors.product_type = 'O tipo é obrigatório.';
   }
-
-  if (!values.product_code.trim()) {
-    errors.product_code = 'O código é obrigatório.';
-  } else if (values.product_code.trim().length > 60) {
-    errors.product_code = 'O código não pode exceder 60 caracteres.';
-  }
+ 
 
   if (!values.product_description.trim()) {
     errors.product_description = 'A descrição é obrigatória.';
@@ -138,8 +131,7 @@ export function useProductForm(id?: string) {
         if (cancelled) return;
 
         setValues({
-          product_type: record.product_type,
-          product_code: record.product_code,
+          product_type: record.product_type, 
           product_group: record.product_group ?? '',
           product_description: record.product_description,
           product_number_code: record.product_number_code ?? '',
@@ -195,8 +187,7 @@ export function useProductForm(id?: string) {
 
     const basePayload = {
       product_type: values.product_type as ProductType,
-      product_code: values.product_code.trim(),
-      product_group: values.product_group.trim() || null,
+       product_group: values.product_group.trim() || null,
       product_description: values.product_description.trim(),
       product_number_code: values.product_number_code.trim() || null,
       un_number: values.un_number.trim() || null,
