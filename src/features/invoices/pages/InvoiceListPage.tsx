@@ -146,7 +146,7 @@ export function InvoiceListPage() {
           <div className="space-y-1.5">
             <Label htmlFor="filter-type">Tipo de documento</Label>
             <Select value={draftType} onValueChange={setDraftType}>
-              <SelectTrigger id="filter-type">
+              <SelectTrigger id="filter-type" className="bg-muted border-none">
                 <SelectValue placeholder="Todos os tipos" />
               </SelectTrigger>
               <SelectContent>
@@ -163,6 +163,7 @@ export function InvoiceListPage() {
             <Label htmlFor="filter-customer">Cliente</Label>
             <Input
               id="filter-customer"
+              className="bg-muted border-none"
               value={draftCustomer}
               onChange={(e) => setDraftCustomer(e.target.value)}
               placeholder="Nome do cliente"
@@ -173,6 +174,7 @@ export function InvoiceListPage() {
             <Input
               id="filter-start"
               type="date"
+              className="bg-muted border-none"
               value={draftStart}
               onChange={(e) => setDraftStart(e.target.value)}
             />
@@ -182,6 +184,7 @@ export function InvoiceListPage() {
             <Input
               id="filter-end"
               type="date"
+              className="bg-muted border-none"
               value={draftEnd}
               onChange={(e) => setDraftEnd(e.target.value)}
             />
