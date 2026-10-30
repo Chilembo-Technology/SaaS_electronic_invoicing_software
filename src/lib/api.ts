@@ -54,6 +54,34 @@ const DEFAULT_CORE_DATA_API_ROOT = 'http://localhost:8003/api';
  */
 const DEFAULT_FISCAL_API_ROOT = 'http://localhost:8004/api/v1';
 
+/**
+ * Resolve a URL base de um serviço externo (fiscal_core / Angola-Core-Data).
+ *
+ * Em produção a variável de ambiente é obrigatória: se estiver em falta, o
+ * código regista um erro crítico e lança uma excepção, impedindo o uso
+ * silencioso do `localhost` (que causaria erros de CORS/rede na VPS).
+ *
+ * Em desenvolvimento mantém-se o fallback local para permitir correr
+ * `npm run dev` sem configurar o `.env`.
+ */
+function resolveServiceBaseUrl(
+  envUrl: string | undefined,
+  fallback: string,
+  variableName: string,
+): string {
+  if (envUrl) {
+    return envUrl;
+  }
+
+  if (import.meta.env.PROD) {
+    const message = `ERRO CRÍTICO: ${variableName} não está definida no .env.production!`;
+    console.error(message);
+    throw new Error(message);
+  }
+
+  return fallback;
+}
+
 /** Tempo máximo (ms) por pedido — evita pedidos "pendurados" e dá erro de rede tratável. */
 const REQUEST_TIMEOUT = 20000;
 
@@ -83,7 +111,11 @@ export const orgApi: AxiosInstance = axios.create({
  * nem recarregar a página para `/login` no meio do formulário da empresa.
  */
 export const coreDataApi: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_CORE_DATA_API_URL || DEFAULT_CORE_DATA_API_ROOT,
+  baseURL: resolveServiceBaseUrl(
+    import.meta.env.VITE_CORE_DATA_API_URL,
+    DEFAULT_CORE_DATA_API_ROOT,
+    'VITE_CORE_DATA_API_URL',
+  ),
   headers: {
     'Accept': 'application/json',
   },
@@ -95,7 +127,11 @@ export const coreDataApi: AxiosInstance = axios.create({
  * Partilha o interceptor de token (JWT) e o de 401 com o `authApi`/`orgApi`.
  */
 export const fiscalApi: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_FISCAL_API_URL || DEFAULT_FISCAL_API_ROOT,
+  baseURL: resolveServiceBaseUrl(
+    import.meta.env.VITE_FISCAL_API_URL,
+    DEFAULT_FISCAL_API_ROOT,
+    'VITE_FISCAL_API_URL',
+  ),
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
