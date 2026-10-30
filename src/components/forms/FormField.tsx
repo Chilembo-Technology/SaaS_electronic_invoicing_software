@@ -102,7 +102,7 @@ export function FormField({
           onBlur={onBlur}
           onChange={(event) => onChange(event.target.value)}
           className={cn(
-            "h-12 rounded-xl bg-background transition-colors duration-200",
+            "h-9 rounded-md bg-muted border-none transition-colors duration-200",
             (hasError || validating || isValid || isPassword) && "pr-11",
             hasError && "border-destructive focus-visible:ring-destructive/30",
             !hasError && isValid && "border-brand-green focus-visible:ring-brand-green/30",

@@ -41,7 +41,7 @@ export function EmitirFatura() {
 
   const location = useLocation();
   const isClientePanel = location.pathname.startsWith("/cliente");
-  const backHref = isClientePanel ? "/cliente/faturas" : "/faturas";
+  const backHref = isClientePanel ? "/cliente/faturas" : "/invoices";
 
   const [serie, setSerie] = useState("FT-001");
   const [data, setData] = useState(new Date().toISOString().split("T")[0]);
