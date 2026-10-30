@@ -57,7 +57,10 @@ export function useCreateInvoice() {
     setCreatedInvoice(null);
 
     try {
-      const invoice = await invoiceService.createInvoice(companyId, payload, type);
+      // A factura-recibo (FR) exige pelo menos um pagamento (CreateInvoiceReceiptRequest).
+      const body: CreateInvoicePayload =
+        type === 'FR' ? { ...payload, payments: payload.payments ?? [] } : payload;
+      const invoice = await invoiceService.createInvoice(companyId, body, type);
       setCreatedInvoice(invoice);
       return invoice;
     } catch (err) {

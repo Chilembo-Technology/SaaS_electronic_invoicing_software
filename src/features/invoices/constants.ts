@@ -100,6 +100,15 @@ export const CREATE_INVOICE_TYPE_OPTIONS: { value: string; label: string }[] =
 /** Tipos de operação aceites numa nota de crédito (CreateCreditNoteRequest). */
 export const NC_OPERATION_TYPES = ['Rectificação', 'Anulação'] as const;
 
+/** Mecanismos de pagamento aceites pela factura-recibo (FR). */
+export const PAYMENT_MECHANISM_OPTIONS: { value: string; label: string }[] = [
+  { value: 'NU', label: 'Numerário' },
+  { value: 'TB', label: 'Transferência bancária' },
+  { value: 'CC', label: 'Cartão de crédito' },
+  { value: 'CH', label: 'Cheque' },
+  { value: 'MB', label: 'Multibanco' },
+];
+
 /** Títulos das páginas de criação (género incluído na etiqueta). */
 export const CREATE_PAGE_TITLES: Record<string, string> = {
   FT: 'Nova Factura',

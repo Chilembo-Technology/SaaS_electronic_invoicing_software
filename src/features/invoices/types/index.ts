@@ -141,6 +141,13 @@ export interface CreateInvoiceLine {
   tax_percentage?: number;
 }
 
+/** Pagamento de uma factura-recibo (FR) — estrutura exigida pelo CreateInvoiceReceiptRequest. */
+export interface PaymentDraft {
+  payment_mechanism: string;
+  payment_amount: number;
+  payment_date: string;
+}
+
 /** Payload do pedido de criação de documento (um dos request DTOs do fiscal_core). */
 export interface CreateInvoicePayload {
   customer_code: string;
@@ -162,6 +169,8 @@ export interface CreateInvoicePayload {
   amount_paid?: number;
   amount_due?: number;
   payment_mechanism?: string;
+  /** Factura-recibo (FR) — pagamentos obrigatórios. */
+  payments?: PaymentDraft[];
   /** Guia de transporte (GT). */
   origin_city?: string;
   origin_address?: string;

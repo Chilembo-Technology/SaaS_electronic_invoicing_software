@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, FileCheck2, Loader2, PackagePlus, Plus, Trash2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -40,12 +40,14 @@ import {
   CREATE_INVOICE_TYPE_OPTIONS,
   CREATE_PAGE_TITLES,
   NC_OPERATION_TYPES,
+  PAYMENT_MECHANISM_OPTIONS,
   invoiceTypeLabel,
 } from '../constants';
 import type {
   CreateInvoicePayload,
   CreditNoteOperationType,
   InvoiceType,
+  PaymentDraft,
   TaxType,
 } from '../types';
 import type { Product, ProductType } from '../../products/types';
@@ -133,6 +135,7 @@ function NumberField({
         ) : null}
       </Label>
       <Input
+        className="bg-muted border-none"
         id={id}
         type="number"
         min="0"
@@ -190,6 +193,7 @@ export function InvoiceCreatePage() {
   const companyId = getCompanyId(user);
 
   const isReceipt = type === 'RG';
+  const isInvoiceReceipt = type === 'FR';
   const isCreditNote = type === 'NC';
   const isTransportGuide = type === 'GT';
   const isDeliveryNote = type === 'GR';
@@ -216,6 +220,11 @@ export function InvoiceCreatePage() {
   const [amountPaid, setAmountPaid] = useState('');
   const [amountDue, setAmountDue] = useState('');
   const [paymentMechanism, setPaymentMechanism] = useState('');
+
+  // Factura-recibo (FR) — pagamento obrigatório
+  const [payments, setPayments] = useState<PaymentDraft[]>([
+    { payment_mechanism: '', payment_amount: 0, payment_date: today() },
+  ]);
 
   // Guia de transporte (GT)
   const [originCity, setOriginCity] = useState('');
@@ -251,6 +260,10 @@ export function InvoiceCreatePage() {
   const updateLine = (id: string, patch: Partial<LineDraft>) =>
     setLines((current) =>
       current.map((line) => (line.id === id ? { ...line, ...patch } : line)),
+    );
+  const updatePayment = (index: number, patch: Partial<PaymentDraft>) =>
+    setPayments((current) =>
+      current.map((payment, i) => (i === index ? { ...payment, ...patch } : payment)),
     );
 
   const onSelectCustomer = (code: string) => {
@@ -404,6 +417,7 @@ export function InvoiceCreatePage() {
     setAmountPaid('');
     setAmountDue('');
     setPaymentMechanism('');
+    setPayments([{ payment_mechanism: '', payment_amount: 0, payment_date: today() }]);
     setOriginCity('');
     setOriginAddress('');
     setDestinationCity('');
@@ -424,6 +438,19 @@ export function InvoiceCreatePage() {
     (sum, line) => sum + toNumber(line.credit_amount),
     0,
   );
+
+  // Pré-preenche o valor do pagamento (FR) com o total calculado do documento.
+  useEffect(() => {
+    if (type === 'FR') {
+      setPayments((current) =>
+        current.map((payment, index) =>
+          index === 0 && payment.payment_amount === 0
+            ? { ...payment, payment_amount: total }
+            : payment,
+        ),
+      );
+    }
+  }, [type, total]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -491,24 +518,24 @@ export function InvoiceCreatePage() {
       payload.lines = lines.map((line) =>
         usesLineAmount
           ? {
-              product_code: line.product_code.trim(),
-              product_description: line.product_description.trim(),
-              quantity: toNumber(line.quantity),
-              credit_amount: toNumber(line.credit_amount),
-            }
+            product_code: line.product_code.trim(),
+            product_description: line.product_description.trim(),
+            quantity: toNumber(line.quantity),
+            credit_amount: toNumber(line.credit_amount),
+          }
           : {
-              product_code: line.product_code.trim(),
-              product_description: line.product_description.trim(),
-              quantity: toNumber(line.quantity),
-              unit_price: toNumber(line.unit_price),
-              tax_type:
-                line.tax_type === '' ? undefined : (line.tax_type as TaxType),
-              tax_code: line.tax_code === '' ? undefined : line.tax_code,
-              tax_percentage:
-                line.tax_percentage === ''
-                  ? undefined
-                  : toNumber(line.tax_percentage),
-            },
+            product_code: line.product_code.trim(),
+            product_description: line.product_description.trim(),
+            quantity: toNumber(line.quantity),
+            unit_price: toNumber(line.unit_price),
+            tax_type:
+              line.tax_type === '' ? undefined : (line.tax_type as TaxType),
+            tax_code: line.tax_code === '' ? undefined : line.tax_code,
+            tax_percentage:
+              line.tax_percentage === ''
+                ? undefined
+                : toNumber(line.tax_percentage),
+          },
       );
 
       if (isCreditNote) {
@@ -544,6 +571,29 @@ export function InvoiceCreatePage() {
         payload.destination_city = destinationCity.trim();
         payload.destination_address = destinationAddress.trim();
       }
+    }
+
+    if (isInvoiceReceipt) {
+      const payment = payments[0];
+      if (!payment || !payment.payment_mechanism.trim()) {
+        setLocalError('Selecione o mecanismo de pagamento.');
+        return;
+      }
+      if (!payment.payment_date) {
+        setLocalError('Indique a data do pagamento.');
+        return;
+      }
+      if (!(payment.payment_amount > 0)) {
+        setLocalError('O valor do pagamento tem de ser superior a zero.');
+        return;
+      }
+      payload.payments = [
+        {
+          payment_mechanism: payment.payment_mechanism,
+          payment_amount: payment.payment_amount,
+          payment_date: payment.payment_date,
+        },
+      ];
     }
 
     await createInvoice(payload, type);
@@ -630,6 +680,7 @@ export function InvoiceCreatePage() {
                 <div className="flex-1 min-w-0">
                   <Select value={customerCode} onValueChange={onSelectCustomer}>
                     <SelectTrigger
+                      className="bg-muted border-none"
                       id="customer_code"
                       aria-invalid={Boolean(fieldErrors.customerCode)}
                     >
@@ -676,6 +727,7 @@ export function InvoiceCreatePage() {
                 </span>
               </Label>
               <Input
+                className="bg-muted border-none"
                 id="invoice_date"
                 type="date"
                 value={invoiceDate}
@@ -687,6 +739,62 @@ export function InvoiceCreatePage() {
             </div>
           </CardContent>
         </Card>
+
+        {isInvoiceReceipt ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pagamentos</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="payment_mechanism">Mecanismo</Label>
+                <Select
+                  value={payments[0]?.payment_mechanism ?? ''}
+                  onValueChange={(value) =>
+                    updatePayment(0, { payment_mechanism: value })
+                  }
+                >
+                  <SelectTrigger id="payment_mechanism" className="bg-muted border-none">
+                    <SelectValue placeholder="Selecione o mecanismo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_MECHANISM_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="payment_date">Data do pagamento</Label>
+                <Input
+                  id="payment_date"
+                  type="date"
+                  className="bg-muted border-none"
+                  value={payments[0]?.payment_date ?? today()}
+                  onChange={(e) =>
+                    updatePayment(0, { payment_date: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="payment_amount">Valor pago</Label>
+                <Input
+                  className="bg-muted border-none"
+                  id="payment_amount"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={payments[0]?.payment_amount ?? 0}
+                  onChange={(e) =>
+                    updatePayment(0, { payment_amount: toNumber(e.target.value) })
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {isReceipt ? (
           <Card>
@@ -775,6 +883,7 @@ export function InvoiceCreatePage() {
                   }
                 >
                   <SelectTrigger
+                    className="bg-muted border-none"
                     id="operation_type"
                     aria-invalid={Boolean(fieldErrors.operationType)}
                   >
@@ -892,7 +1001,7 @@ export function InvoiceCreatePage() {
                       value={line.product_code}
                       onValueChange={(code) => onSelectProduct(line.id, code)}
                     >
-                      <SelectTrigger id={`line-${line.id}-product`}>
+                      <SelectTrigger className="bg-muted border-none" id={`line-${line.id}-product`}>
                         <SelectValue
                           placeholder={
                             productsLoading
@@ -916,6 +1025,7 @@ export function InvoiceCreatePage() {
                   <div className="space-y-1.5 sm:col-span-1">
                     <Label htmlFor={`line-${line.id}-qty`}>Qtd.</Label>
                     <Input
+                      className="bg-muted border-none"
                       id={`line-${line.id}-qty`}
                       type="number"
                       min="0"
@@ -932,6 +1042,7 @@ export function InvoiceCreatePage() {
                         Total da linha
                       </Label>
                       <Input
+                        className="bg-muted border-none"
                         id={`line-${line.id}-amount`}
                         type="number"
                         min="0"
@@ -947,6 +1058,7 @@ export function InvoiceCreatePage() {
                       <div className="space-y-1.5 sm:col-span-1">
                         <Label htmlFor={`line-${line.id}-price`}>Preço</Label>
                         <Input
+                          className="bg-muted border-none"
                           id={`line-${line.id}-price`}
                           type="number"
                           min="0"
@@ -960,6 +1072,7 @@ export function InvoiceCreatePage() {
                       <div className="space-y-1.5 sm:col-span-1">
                         <Label htmlFor={`line-${line.id}-tax`}>IVA %</Label>
                         <Input
+                          className="bg-muted border-none"
                           id={`line-${line.id}-tax`}
                           type="number"
                           min="0"
