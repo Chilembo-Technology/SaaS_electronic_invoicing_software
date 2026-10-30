@@ -125,7 +125,6 @@ export function VatExemptionFormPage() {
                   </span>
                 </Label>
                 <Input
-                  className="bg-muted border-none"
                   id="code"
                   value={values.code}
                   maxLength={3}
@@ -134,7 +133,7 @@ export function VatExemptionFormPage() {
                   aria-invalid={Boolean(fieldErrors.code)}
                   aria-describedby={fieldErrors.code ? 'code-error' : undefined}
                   onChange={(e) => setField('code', e.target.value.toUpperCase())}
-                  className={isEdit ? 'cursor-not-allowed bg-muted/40' : undefined}
+                  className={isEdit ? 'cursor-not-allowed bg-muted/40 border-none' : undefined}
                 />
                 {fieldErrors.code ? (
                   <FieldError id="code-error" message={fieldErrors.code} />

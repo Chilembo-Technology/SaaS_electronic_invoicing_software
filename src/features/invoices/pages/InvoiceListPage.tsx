@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
-import { ChevronDown, Download, FilePlus2, FileText, Loader2, RotateCw } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import { ChevronDown, Download, FileText, Loader2, Plus, RotateCw } from 'lucide-react';
 
 import { Badge } from '../../../app/components/ui/badge';
 import { Button } from '../../../app/components/ui/button';
@@ -33,12 +33,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../../app/components/ui/dropdown-menu';
 import {
-  CREATE_INVOICE_TYPE_OPTIONS,
+  DOCUMENT_TYPES,
   INVOICE_TYPE_OPTIONS,
   invoiceTypeLabel,
 } from '../constants';
@@ -62,6 +60,7 @@ function formatDate(value?: string | null): string {
 
 export function InvoiceListPage() {
   useDocumentTitle('Faturas');
+  const navigate = useNavigate();
 
   const {
     invoices,
@@ -119,19 +118,21 @@ export function InvoiceListPage() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button>
-              <FilePlus2 className="size-4" aria-hidden="true" />
-              Novo documento
-              <ChevronDown className="size-4" aria-hidden="true" />
+              <Plus className="mr-2 size-4" aria-hidden="true" />
+              Novo Documento
+              <ChevronDown className="ml-2 size-4" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Emitir documento</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {CREATE_INVOICE_TYPE_OPTIONS.map((option) => (
-              <DropdownMenuItem key={option.value} asChild>
-                <Link to={`/invoices/create/${option.value}`}>
-                  {option.label}
-                </Link>
+            {DOCUMENT_TYPES.map((doc) => (
+              <DropdownMenuItem
+                key={doc.code}
+                onClick={() => {
+                  console.log('Clicou no documento:', doc.code);
+                  navigate(`/invoices/create/${doc.code}`);
+                }}
+              >
+                {doc.label}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

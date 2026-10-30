@@ -27,6 +27,23 @@ export const INVOICE_TYPE_LABELS: Record<string, string> = {
 };
 
 /**
+ * Tipos de documento disponíveis para emissão rápida a partir da listagem.
+ * `code` é o SAF-T 4.1 (InvoiceType) usado pelo fiscal_core; `label` é a
+ * tradução PT para a UI.
+ */
+export const DOCUMENT_TYPES: { code: string; label: string }[] = [
+  { code: 'FT', label: 'Fatura' },
+  { code: 'FR', label: 'Fatura/Recibo' },
+  { code: 'RG', label: 'Recibo' },
+  { code: 'OR', label: 'Orçamento' },
+  { code: 'GR', label: 'Guia de Remessa' },
+  { code: 'GT', label: 'Guia de Transporte' },
+  { code: 'PP', label: 'Fatura Proforma' },
+  { code: 'ND', label: 'Nota de Débito' },
+  { code: 'NC', label: 'Nota de Crédito' },
+];
+
+/**
  * Tipos pesquisáveis na listagem unificada — coincide com
  * `ListInvoicesRequest::FILTERABLE_TYPES`.
  */
