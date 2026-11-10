@@ -54,7 +54,7 @@ export function toCompanyPayload(values: CompanyFormValues): CreateCompanyPayloa
 
 /**
  * Converte os valores do passo 2 no payload de `POST /v1/users`.
- * `role` é fixado em "Administrator" (único valor válido para o admin da empresa)
+ * `role` é fixado em "administrator" (único valor válido para o admin da empresa)
  * e `status` em "active" — evita os defaults inconsistentes do DTO do backend.
  */
 export function toAdminUserPayload(
@@ -69,7 +69,7 @@ export function toAdminUserPayload(
     phone_number: sanitizeAngolanPhone(values.phoneNumber),
     bi_number: sanitizeBiNumber(values.biNumber),
     company_id: companyId,
-    role: 'Administrator',
+    role: 'administrator',
     status: 'active',
   };
 }

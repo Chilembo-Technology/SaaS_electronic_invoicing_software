@@ -83,7 +83,7 @@ describe("toAdminUserPayload", () => {
       phone_number: "923111222",
       bi_number: "000000000LA000",
       company_id: "uuid-da-empresa",
-      role: "Administrator",
+      role: "administrator",
       status: "active",
     });
   });
@@ -145,7 +145,7 @@ describe("registerService.createAdminUser", () => {
 
     expect(mocks.authPost).toHaveBeenCalledWith(
       "/v1/users",
-      expect.objectContaining({ company_id: "uuid-1", role: "Administrator", status: "active" }),
+      expect.objectContaining({ company_id: "uuid-1", role: "administrator", status: "active" }),
     );
     expect(user.id).toBe("user-1");
   });

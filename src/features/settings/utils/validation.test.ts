@@ -134,7 +134,7 @@ describe('validateCreateUserFields', () => {
     password: 'segredo123',
     phone_number: '923456789',
     bi_number: '001234567LA042',
-    role: 'Administrator' as const,
+    role: 'administrator' as const,
     status: 'active' as const,
   };
 

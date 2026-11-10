@@ -156,7 +156,7 @@ describe("RegisterPage — passo 2 e confirmação", () => {
     expect(serviceMocks.createAdminUser).toHaveBeenCalledWith(
       expect.objectContaining({
         company_id: "uuid-1",
-        role: "Administrator",
+        role: "administrator",
         status: "active",
         email: "ana@kianda.ao",
       }),

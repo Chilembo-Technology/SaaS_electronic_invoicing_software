@@ -51,9 +51,9 @@ interface CreateUserModalProps {
 
 /** Opções do select de papel — valores EXACTOS aceites pelo `StoreUserRequest`. */
 const ROLE_OPTIONS: { value: CreateUserRole; label: string }[] = [
-  { value: 'Administrator', label: 'Administrador' },
-  { value: 'Operator', label: 'Operador' },
-  { value: 'Viewer', label: 'Visualizador' },
+  { value: 'administrator', label: 'Administrador' },
+  { value: 'operator', label: 'Operador' },
+  { value: 'viewer', label: 'Visualizador' },
 ];
 
 /**
@@ -61,7 +61,7 @@ const ROLE_OPTIONS: { value: CreateUserRole; label: string }[] = [
  *
  * Espelha o `EditUserModal` (Dialog shadcn + FormField + FormAlert), com três
  * diferenças: `password`/`bi_number` são obrigatórios, existe select de papel
- * (Administrator | Viewer | Operator — nunca "super-admin") e o `company_id`
+ * (administrator | viewer | operator — nunca "super-admin") e o `company_id`
  * vem da sessão (`AuthContext`), nunca do formulário.
  */
 export function CreateUserModal({ companyId, open, onOpenChange, onCreated }: CreateUserModalProps) {

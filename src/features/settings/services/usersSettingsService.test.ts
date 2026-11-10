@@ -72,7 +72,7 @@ describe('usersSettingsService.updateUser', () => {
 
     const [path, formData, config] = mocks.post.mock.calls[0];
     expect(path).toBe('/v1/users/update/u1');
-    expect((formData as FormData).get('company_id')).toBe('c1'); 
+    expect((formData as FormData).get('company_id')).toBe('c1');
     expect((formData as FormData).get('status')).toBe('inactive');
     expect(config).toEqual({ headers: { 'Content-Type': 'multipart/form-data' } });
     expect(updated.status).toBe('inactive');
@@ -88,7 +88,7 @@ describe('usersSettingsService.createUser', () => {
     phone_number: '923456789',
     bi_number: '001234567LA042',
     company_id: 'c1',
-    role: 'Administrator' as const,
+    role: 'administrator' as const,
     status: 'active' as const,
   };
 
@@ -106,7 +106,7 @@ describe('usersSettingsService.createUser', () => {
     expect((formData as FormData).get('email')).toBe('ana@kianda.ao');
     expect((formData as FormData).get('password')).toBe('segredo123');
     expect((formData as FormData).get('company_id')).toBe('c1');
-    expect((formData as FormData).get('role')).toBe('Administrator');
+    expect((formData as FormData).get('role')).toBe('administrator');
     expect((formData as FormData).get('status')).toBe('active');
     // Sem foto, o campo não entra no FormData (backend trata `nullable`).
     expect((formData as FormData).get('photo')).toBeNull();
