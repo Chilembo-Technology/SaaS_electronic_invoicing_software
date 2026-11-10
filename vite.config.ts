@@ -74,6 +74,9 @@ export default defineConfig(({ mode }) => {
     },
 
     server: {
+      // Em Docker sobre Windows os eventos de ficheiro do bind mount não chegam ao
+      // contentor: sem polling o Vite continua a servir módulos antigos.
+      watch: env.VITE_DEV_USE_POLLING === 'true' ? { usePolling: true, interval: 300 } : undefined,
       // Em `npm run dev` o browser fala sempre com o Vite (`/api`) — sem CORS.
       // Com o gateway nginx (`VITE_DEV_PROXY_TARGET`) todos os pedidos passam por ele;
       // sem gateway, cada prefixo vai directamente ao serviço que o publica no host

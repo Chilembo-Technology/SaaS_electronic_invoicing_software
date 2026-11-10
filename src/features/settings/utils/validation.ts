@@ -65,7 +65,7 @@ export const SETTINGS_MESSAGES = {
   ibanFormat: 'Iban inválido. Ex.: 0005.0000.7998.9111.1019.7',
   photoMimes: 'A foto deve ser um arquivo do tipo: jpeg, png, jpg, gif, bmp, svg, webp ou heic.',
   photoMax: 'A foto não pode ser maior que 2MB.',
-  roleInvalid: 'A função deve ser "Administrator", "Viewer" ou "Operator".',
+  roleInvalid: 'A função deve ser "administrator", "viewer" ou "operator".',
   statusInvalid: 'O status deve ser "active" ou "inactive".',
 } as const;
 

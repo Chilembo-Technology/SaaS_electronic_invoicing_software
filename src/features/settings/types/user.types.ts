@@ -63,10 +63,10 @@ export const EMPTY_USERS_FILTERS: UsersFilters = { search: '', role: '', status:
  * Papéis atribuíveis via endpoint de criação.
  * ⚠️ `super-admin` é BLOQUEADO no backend (`Rule::notIn`) — nunca aparece aqui.
  */
-export type CreateUserRole = 'Administrator' | 'Viewer' | 'Operator';
+export type CreateUserRole = 'administrator' | 'viewer' | 'operator';
 
-/** Valores permitidos pelo `Rule::in(['Administrator', 'Viewer', 'Operator'])`. */
-export const CREATE_USER_ROLES: CreateUserRole[] = ['Administrator', 'Viewer', 'Operator'];
+/** Valores permitidos pelo `Rule::in(['administrator', 'viewer', 'operator'])` (case-sensitive). */
+export const CREATE_USER_ROLES: CreateUserRole[] = ['administrator', 'viewer', 'operator'];
 
 /** Estados aceites pelo backend (`Rule::in(['active', 'inactive'])`). */
 export type CreateUserStatus = 'active' | 'inactive';
@@ -109,6 +109,6 @@ export const CREATE_USER_DEFAULTS: CreateUserFormValues = {
   password: '',
   phone_number: '',
   bi_number: '',
-  role: 'Administrator',
+  role: 'administrator',
   status: 'active',
 };

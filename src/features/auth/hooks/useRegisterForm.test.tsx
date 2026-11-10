@@ -260,7 +260,7 @@ describe("useRegisterForm — passo 2 (utilizador administrador)", () => {
         phone_number: "923111222",
         bi_number: "000000000LA000",
         company_id: "uuid-1",
-        role: "Administrator",
+        role: "administrator",
         status: "active",
       }),
     );

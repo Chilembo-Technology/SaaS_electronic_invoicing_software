@@ -49,7 +49,7 @@ export function AdminUserStepForm({
       <div className="flex items-start gap-3 rounded-xl border border-brand-navy/15 bg-brand-navy/5 p-4">
         <ShieldCheck size={18} className="mt-0.5 shrink-0 text-brand-navy" aria-hidden="true" />
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Este utilizador fica como <strong className="text-foreground">Administrator</strong> de{" "}
+          Este utilizador fica como <strong className="text-foreground">administrator</strong> de{" "}
           <strong className="text-foreground">{companyName || "empresa registada"}</strong>, com
           acesso a faturação, utilizadores e configurações.
         </p>

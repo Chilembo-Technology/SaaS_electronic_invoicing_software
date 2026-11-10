@@ -32,7 +32,7 @@ const VERIFY_RESPONSE = {
     phone_number: "923000000",
     status: "active",
     company_id: "company-1",
-    roles: ["Administrator"],
+    roles: ["administrator"],
     permissions: ["invoices.create"],
     created_at: "2026-01-02T08:00:00+00:00",
   },
@@ -109,97 +109,97 @@ describe("loginService.requestOtp", () => {
     expect(isLoginApiError(error)).toBe(true);
     expect(error).toMatchObject({ status: 429, retryAfterSeconds: 120 });
   });
-describe("loginService.verifyOtp", () => {
-  it("valida o código e devolve a sessão autenticada (JWT + utilizador mapeado)", async () => {
-    mocks.post.mockResolvedValueOnce({ data: VERIFY_RESPONSE });
+  describe("loginService.verifyOtp", () => {
+    it("valida o código e devolve a sessão autenticada (JWT + utilizador mapeado)", async () => {
+      mocks.post.mockResolvedValueOnce({ data: VERIFY_RESPONSE });
 
-    const session = await loginService.verifyOtp({
-      email: " ana@Kianda.AO ",
-      code: 123456789,
+      const session = await loginService.verifyOtp({
+        email: " ana@Kianda.AO ",
+        code: 123456789,
+      });
+
+      expect(mocks.post).toHaveBeenCalledWith("/v1/auth/verify-otp", {
+        email: "ana@kianda.ao",
+        code: 123456789,
+      });
+      expect(session.token).toBe("jwt-token");
+      expect(session.tokenType).toBe("bearer");
+      expect(session.expiresIn).toBe(3600);
+      expect(session.expiresAt).toBe("2026-09-29 11:30:00");
+      expect(session.user).toMatchObject({
+        id: "user-1",
+        name: "Ana Silva",
+        email: "ana@kianda.ao",
+        role: "administrator",
+        status: "active",
+        company_id: "company-1",
+        roles: ["administrator"],
+        permissions: ["invoices.create"],
+      });
     });
 
-    expect(mocks.post).toHaveBeenCalledWith("/v1/auth/verify-otp", {
-      email: "ana@kianda.ao",
-      code: 123456789,
+    it("falha quando a API aceita o código mas não devolve o token", async () => {
+      mocks.post.mockResolvedValueOnce({ data: { success: true, message: "OK", data: {} } });
+
+      await expect(
+        loginService.verifyOtp({ email: "ana@kianda.ao", code: 123456789 }),
+      ).rejects.toThrow(/não devolveu o token de acesso/);
     });
-    expect(session.token).toBe("jwt-token");
-    expect(session.tokenType).toBe("bearer");
-    expect(session.expiresIn).toBe(3600);
-    expect(session.expiresAt).toBe("2026-09-29 11:30:00");
-    expect(session.user).toMatchObject({
-      id: "user-1",
-      name: "Ana Silva",
-      email: "ana@kianda.ao",
-      role: "Administrator",
-      status: "active",
-      company_id: "company-1",
-      roles: ["Administrator"],
-      permissions: ["invoices.create"],
+
+    it("traduz o 401 (código inválido/expirado) com a mensagem do backend", async () => {
+      mocks.post.mockRejectedValueOnce(
+        httpError(401, { success: false, message: "Código OTP inválido ou expirado" }),
+      );
+
+      await expect(
+        loginService.verifyOtp({ email: "ana@kianda.ao", code: 111111111 }),
+      ).rejects.toMatchObject({
+        status: 401,
+        message: "Código OTP inválido ou expirado",
+        isValidationError: false,
+        isNetworkError: false,
+      });
     });
-  });
 
-  it("falha quando a API aceita o código mas não devolve o token", async () => {
-    mocks.post.mockResolvedValueOnce({ data: { success: true, message: "OK", data: {} } });
+    it("traduz o 404 (utilizador não encontrado)", async () => {
+      mocks.post.mockRejectedValueOnce(
+        httpError(404, { success: false, message: "Usuário não encontrado" }),
+      );
 
-    await expect(
-      loginService.verifyOtp({ email: "ana@kianda.ao", code: 123456789 }),
-    ).rejects.toThrow(/não devolveu o token de acesso/);
-  });
-
-  it("traduz o 401 (código inválido/expirado) com a mensagem do backend", async () => {
-    mocks.post.mockRejectedValueOnce(
-      httpError(401, { success: false, message: "Código OTP inválido ou expirado" }),
-    );
-
-    await expect(
-      loginService.verifyOtp({ email: "ana@kianda.ao", code: 111111111 }),
-    ).rejects.toMatchObject({
-      status: 401,
-      message: "Código OTP inválido ou expirado",
-      isValidationError: false,
-      isNetworkError: false,
+      await expect(
+        loginService.verifyOtp({ email: "nao.existe@kianda.ao", code: 123456789 }),
+      ).rejects.toMatchObject({ status: 404, message: "Usuário não encontrado" });
     });
-  });
 
-  it("traduz o 404 (utilizador não encontrado)", async () => {
-    mocks.post.mockRejectedValueOnce(
-      httpError(404, { success: false, message: "Usuário não encontrado" }),
-    );
+    it("usa o texto de servidor (e não o do registo) num 500", async () => {
+      mocks.post.mockRejectedValueOnce(httpError(500, { message: "Server Error" }));
 
-    await expect(
-      loginService.verifyOtp({ email: "nao.existe@kianda.ao", code: 123456789 }),
-    ).rejects.toMatchObject({ status: 404, message: "Usuário não encontrado" });
-  });
-
-  it("usa o texto de servidor (e não o do registo) num 500", async () => {
-    mocks.post.mockRejectedValueOnce(httpError(500, { message: "Server Error" }));
-
-    await expect(
-      loginService.verifyOtp({ email: "ana@kianda.ao", code: 123456789 }),
-    ).rejects.toMatchObject({
-      status: 500,
-      message: "Não foi possível concluir a operação. Tente novamente dentro de instantes.",
-    });
-  });
-});
-
-describe("toUser", () => {
-  it("junta o nome e usa o primeiro papel como `role`/`perfil`", () => {
-    expect(toUser({ id: "1", first_name: "Ana", last_name: "Silva", roles: ["Administrator"] })).toMatchObject({
-      name: "Ana Silva",
-      role: "Administrator",
-      perfil: "Administrator",
-      ativo: false,
+      await expect(
+        loginService.verifyOtp({ email: "ana@kianda.ao", code: 123456789 }),
+      ).rejects.toMatchObject({
+        status: 500,
+        message: "Não foi possível concluir a operação. Tente novamente dentro de instantes.",
+      });
     });
   });
 
-  it("recorre ao email quando não há nome e nunca devolve `undefined`", () => {
-    expect(toUser({ id: "2", email: "ana@kianda.ao" })).toMatchObject({
-      name: "ana@kianda.ao",
-      role: undefined,
+  describe("toUser", () => {
+    it("junta o nome e usa o primeiro papel como `role`/`perfil`", () => {
+      expect(toUser({ id: "1", first_name: "Ana", last_name: "Silva", roles: ["administrator"] })).toMatchObject({
+        name: "Ana Silva",
+        role: "administrator",
+        perfil: "administrator",
+        ativo: false,
+      });
     });
-    expect(toUser(null).name).toBe("Utilizador");
+
+    it("recorre ao email quando não há nome e nunca devolve `undefined`", () => {
+      expect(toUser({ id: "2", email: "ana@kianda.ao" })).toMatchObject({
+        name: "ana@kianda.ao",
+        role: undefined,
+      });
+      expect(toUser(null).name).toBe("Utilizador");
+    });
   });
-});
 
 });
