@@ -159,7 +159,13 @@ fiscalApi.interceptors.request.use(attachAuthTokenInterceptor, (error) => Promis
  * `/v1/otp/generate` (reenvio do código) é igualmente público no auth_service,
  * pelo que um 401 inesperado aí também não pode expulsar o utilizador.
  */
-const PUBLIC_AUTH_ENDPOINTS = ['/v1/auth/login', '/v1/auth/verify-otp', '/v1/otp/generate'];
+const PUBLIC_AUTH_ENDPOINTS = [
+  '/v1/auth/login',
+  '/v1/auth/verify-otp',
+  '/v1/otp/generate',
+  // Registo: um 401 é um onboarding_token inválido/expirado, tratado no formulário.
+  '/v1/onboarding/admin',
+];
 
 const handleUnauthorizedInterceptor = (error: unknown) => {
   if (axios.isAxiosError(error) && error.response?.status === 401) {

@@ -379,7 +379,7 @@ export function useRegisterForm() {
     setPendingStep(2);
 
     try {
-      await registerService.createAdminUser(toAdminUserPayload(userValues, createdCompany.id));
+      await registerService.createAdminUser(toAdminUserPayload(userValues, createdCompany.onboarding_token));
       setSucceeded(true);
 
       toast.success("Conta criada com sucesso", {

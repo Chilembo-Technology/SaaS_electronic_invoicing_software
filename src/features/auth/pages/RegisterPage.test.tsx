@@ -68,7 +68,7 @@ function submitForm() {
 /** Preenche e submete o passo 1, aguardando a passagem para o passo 2. */
 async function submitValidCompany() {
   serviceMocks.createCompany.mockResolvedValueOnce({
-    id: "uuid-1",
+    id: "uuid-1", onboarding_token: "token-1",
     company_name: "Kianda Logística, Lda",
   });
 
@@ -155,9 +155,7 @@ describe("RegisterPage — passo 2 e confirmação", () => {
 
     expect(serviceMocks.createAdminUser).toHaveBeenCalledWith(
       expect.objectContaining({
-        company_id: "uuid-1",
-        role: "administrator",
-        status: "active",
+        onboarding_token: "token-1",
         email: "ana@kianda.ao",
       }),
     );
