@@ -22,6 +22,9 @@ const COMPANY = {
   province: '',
   country: 'AO',
   agt_certificate_number: '',
+  website: '',
+  share_capital: '',
+  swift_bic: '',
   bank_id: '',
   account_number: '',
   holder: '',
@@ -68,6 +71,28 @@ describe('validateCompanyFields', () => {
     expect(errors.bank_id).toBeUndefined();
     expect(errors.account_number).toBeUndefined();
     expect(errors.iban).toBeUndefined();
+  });
+
+  it('valida o rodapé (site, capital social, SWIFT/BIC) quando preenchido', () => {
+    const invalid = validateCompanyFields({
+      ...COMPANY,
+      website: 'banco',
+      share_capital: '1.000,00',
+      swift_bic: 'XX',
+    });
+    expect(invalid.website).toBeTruthy();
+    expect(invalid.share_capital).toBeTruthy();
+    expect(invalid.swift_bic).toBeTruthy();
+
+    const valid = validateCompanyFields({
+      ...COMPANY,
+      website: 'https://www.banco.ao',
+      share_capital: '1000000.50',
+      swift_bic: 'BAIPAOLU',
+    });
+    expect(valid.website).toBeUndefined();
+    expect(valid.share_capital).toBeUndefined();
+    expect(valid.swift_bic).toBeUndefined();
   });
 });
 

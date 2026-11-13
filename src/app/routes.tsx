@@ -15,9 +15,14 @@ import { SettingsLayout } from "../features/settings/pages/SettingsLayout";
 import { CompanySettingsPage } from "../features/settings/pages/CompanySettingsPage";
 import { ProfileSettingsPage } from "../features/settings/pages/ProfileSettingsPage";
 import { UsersSettingsPage } from "../features/settings/pages/UsersSettingsPage";
-import { RequireAdmin, RequireAuth } from "../features/settings/components/RouteGuards";
+import {
+  RequireAdmin,
+  RequireAuth,
+  RequireFinancialInstitution,
+} from "../features/settings/components/RouteGuards";
 
 // Páginas da funcionalidade de Faturas (fiscal_core) — rota em inglês.
+import { GenericInvoiceCreatePage } from "../features/invoices/pages/GenericInvoiceCreatePage";
 import { InvoiceCreatePage } from "../features/invoices/pages/InvoiceCreatePage";
 import { InvoiceListPage } from "../features/invoices/pages/InvoiceListPage";
 
@@ -113,6 +118,17 @@ export const router = createBrowserRouter([
       {
         path: "invoices",
         Component: InvoiceListPage,
+      },
+      {
+        // Factura Genérica: rota estática (tem prioridade sobre `:type` e, como
+        // as rotas não são case-sensitive, também apanha `/invoices/create/gf`).
+        // Só instituições financeiras — o fiscal_core recusa as restantes (403).
+        path: "invoices/create/GF",
+        element: (
+          <RequireFinancialInstitution>
+            <GenericInvoiceCreatePage />
+          </RequireFinancialInstitution>
+        ),
       },
       {
         path: "invoices/create/:type",

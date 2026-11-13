@@ -55,6 +55,17 @@ export interface CompanySettings {
   agt_certificate_number: string;
   /** Caminho do ficheiro da chave privada (dado sensível, só leitura). */
   private_key_path: string | null;
+  /** Site (rodapé dos documentos). */
+  website: string;
+  /** Capital social (rodapé dos documentos), como string decimal. */
+  share_capital: string;
+  /** Código SWIFT/BIC (rodapé dos documentos de bancos). */
+  swift_bic: string;
+  /**
+   * Instituição financeira (banco) — única que pode emitir Factura Genérica.
+   * Só leitura: apenas o super-admin da plataforma a altera, por rota própria.
+   */
+  is_financial_institution: boolean;
   status: string;
   created_at: string | null;
   updated_at: string | null;
@@ -74,6 +85,9 @@ export interface UpdateCompanyPayload {
   city?: string;
   province?: string;
   agt_certificate_number?: string;
+  website?: string;
+  share_capital?: string;
+  swift_bic?: string;
   private_key?: File | null;
   logo?: File | null;
   /**
@@ -100,6 +114,9 @@ export interface CompanyFormValues {
   province: string;
   country: string;
   agt_certificate_number: string;
+  website: string;
+  share_capital: string;
+  swift_bic: string;
   bank_id: string;
   account_number: string;
   holder: string;

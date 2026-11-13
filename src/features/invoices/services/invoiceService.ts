@@ -1,5 +1,6 @@
 import { fiscalApi } from '../../../lib/api';
 import type {
+  CreateGenericInvoicePayload,
   CreateInvoicePayload,
   Invoice,
   InvoiceFilters,
@@ -85,6 +86,22 @@ export const invoiceService = {
   ): Promise<Invoice> {
     const endpoint = INVOICE_TYPE_ENDPOINTS[type] ?? INVOICE_TYPE_ENDPOINTS.FT;
     const response = await fiscalApi.post<ApiEnvelope<Invoice>>(endpoint, {
+      company_id: companyId,
+      ...payload,
+    });
+    const body = response.data;
+    return body.data ?? (body as unknown as Invoice);
+  },
+
+  /**
+   * Cria uma Factura Genérica (GF) — só instituições financeiras; o
+   * fiscal_core devolve 403 às restantes empresas.
+   */
+  async createGenericInvoice(
+    companyId: string,
+    payload: CreateGenericInvoicePayload,
+  ): Promise<Invoice> {
+    const response = await fiscalApi.post<ApiEnvelope<Invoice>>(INVOICE_TYPE_ENDPOINTS.GF, {
       company_id: companyId,
       ...payload,
     });

@@ -46,6 +46,9 @@ function toValues(company: CompanySettings): CompanyFormValues {
     province: company.province,
     country: company.country,
     agt_certificate_number: company.agt_certificate_number,
+    website: company.website,
+    share_capital: company.share_capital,
+    swift_bic: company.swift_bic,
     bank_id: account?.bank_id ?? '',
     account_number: account?.account_number ?? '',
     holder: account?.holder ?? '',
@@ -135,6 +138,9 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
         city: values.city,
         province: values.province,
         agt_certificate_number: values.agt_certificate_number,
+        website: values.website,
+        share_capital: values.share_capital,
+        swift_bic: values.swift_bic.toUpperCase(),
         // Dados bancários — reutiliza o id da conta mais recente (evita duplicados
         // e garante que o formulário volta a mostrar o que foi gravado).
         corporate_account_id: pickLatestCorporateAccount(company)?.id,
@@ -274,6 +280,50 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
             onChange={() => undefined}
             hint="Não editável — definido no registo (ex.: AO)."
             disabled
+          />
+        </div>
+      </div>
+
+      {/* Rodapé dos documentos */}
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="mb-1 text-base font-semibold text-foreground">Rodapé dos documentos</h2>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Impresso no rodapé das facturas.{' '}
+          {company.is_financial_institution
+            ? 'Esta empresa está registada como instituição financeira (pode emitir Factura Genérica).'
+            : 'A indicação de instituição financeira só pode ser alterada pelo suporte da plataforma.'}
+        </p>
+        <div className="grid gap-5 md:grid-cols-2">
+          <FormField
+            id="website"
+            label="Site"
+            type="url"
+            value={values.website}
+            onChange={(v) => update('website', v)}
+            error={fieldError('website')}
+            disabled={!canEdit}
+            placeholder="https://www.empresa.ao"
+            maxLength={150}
+            className="md:col-span-2"
+          />
+          <FormField
+            id="share_capital"
+            label="Capital social (AOA)"
+            inputMode="decimal"
+            value={values.share_capital}
+            onChange={(v) => update('share_capital', v.replace(/[^0-9.]/g, ''))}
+            error={fieldError('share_capital')}
+            disabled={!canEdit}
+          />
+          <FormField
+            id="swift_bic"
+            label="SWIFT/BIC"
+            value={values.swift_bic}
+            onChange={(v) => update('swift_bic', v.toUpperCase())}
+            error={fieldError('swift_bic')}
+            disabled={!canEdit}
+            maxLength={11}
+            hint="8 ou 11 caracteres, ex.: BAIPAOLU"
           />
         </div>
       </div>

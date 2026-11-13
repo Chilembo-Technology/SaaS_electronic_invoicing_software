@@ -39,7 +39,9 @@ import {
   DOCUMENT_TYPES,
   INVOICE_TYPE_OPTIONS,
   invoiceTypeLabel,
+  isFinancialInstitutionOnlyType,
 } from '../constants';
+import { useFinancialInstitution } from '../hooks/useFinancialInstitution';
 import { useInvoices } from '../hooks/useInvoices';
 import type { Invoice } from '../types';
 
@@ -72,6 +74,15 @@ export function InvoiceListPage() {
     setFilters,
     refresh,
   } = useInvoices();
+
+  // Factura Genérica (GF): só instituições financeiras a vêem (o backend recusa as restantes).
+  const { isFinancialInstitution } = useFinancialInstitution();
+  const documentTypes = isFinancialInstitution
+    ? [...DOCUMENT_TYPES, { code: 'GF', label: 'Factura Genérica' }]
+    : DOCUMENT_TYPES;
+  const typeFilterOptions = INVOICE_TYPE_OPTIONS.filter(
+    (option) => isFinancialInstitution || !isFinancialInstitutionOnlyType(option.value),
+  );
 
   const [draftType, setDraftType] = useState('all');
   const [draftCustomer, setDraftCustomer] = useState('');
@@ -124,7 +135,7 @@ export function InvoiceListPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {DOCUMENT_TYPES.map((doc) => (
+            {documentTypes.map((doc) => (
               <DropdownMenuItem
                 key={doc.code}
                 onClick={() => {
@@ -151,7 +162,7 @@ export function InvoiceListPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os tipos</SelectItem>
-                {INVOICE_TYPE_OPTIONS.map((option) => (
+                {typeFilterOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
