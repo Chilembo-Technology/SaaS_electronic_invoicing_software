@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 
 import { useAuth } from '../../../contexts/AuthContext';
 import { useFinancialInstitution } from '../../invoices/hooks/useFinancialInstitution';
-import { isAdmin } from '../utils/session';
+import { isAdmin, isSuperAdmin } from '../utils/session';
 
 /**
  * Guardas de rota da secção de Configurações.
@@ -63,6 +63,23 @@ export function RequireFinancialInstitution({ children }: { children: ReactNode 
         </div>
       </div>
     );
+  }
+
+  return <>{children}</>;
+}
+
+/**
+ * `RequireSuperAdmin` → só o super-admin da plataforma (gestão de todas as
+ * empresas). Os restantes papéis voltam ao painel. Protecção de UI: o
+ * organization_service recusa (403) as rotas de super-admin.
+ */
+export function RequireSuperAdmin({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <GuardLoader label="A verificar permissões…" />;
+
+  if (!isSuperAdmin(user)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

@@ -6,7 +6,6 @@ import { Produtos } from "./pages/Produtos";
 import { EmitirFatura } from "./pages/EmitirFatura";
 import { Relatorios } from "./pages/Relatorios";
 import { Usuarios } from "./pages/Usuarios";
-import { Empresas } from "./pages/Empresas";
 import { Planos } from "./pages/Planos";
 import { Layout } from "./components/Layout";
 
@@ -19,9 +18,11 @@ import {
   RequireAdmin,
   RequireAuth,
   RequireFinancialInstitution,
+  RequireSuperAdmin,
 } from "../features/settings/components/RouteGuards";
 
 // Páginas da funcionalidade de Faturas (fiscal_core) — rota em inglês.
+import { CompaniesAdminPage } from "../features/platform-admin/pages/CompaniesAdminPage";
 import { GenericInvoiceCreatePage } from "../features/invoices/pages/GenericInvoiceCreatePage";
 import { InvoiceCreatePage } from "../features/invoices/pages/InvoiceCreatePage";
 import { InvoiceListPage } from "../features/invoices/pages/InvoiceListPage";
@@ -221,8 +222,13 @@ export const router = createBrowserRouter([
         Component: Usuarios,
       },
       {
+        // Gestão de todas as empresas da plataforma: só super-admin.
         path: "empresas",
-        Component: Empresas,
+        element: (
+          <RequireSuperAdmin>
+            <CompaniesAdminPage />
+          </RequireSuperAdmin>
+        ),
       },
       {
         path: "planos",
