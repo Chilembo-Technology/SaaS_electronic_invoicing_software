@@ -102,7 +102,7 @@ describe("useRegisterForm — validação no cliente", () => {
   it("não avança quando faltam dados do utilizador", async () => {
     const { result } = renderHook(() => useRegisterForm());
 
-    serviceMocks.createCompany.mockResolvedValueOnce({ id: "uuid-1", company_name: "Kianda Logística, Lda" });
+    serviceMocks.createCompany.mockResolvedValueOnce({ id: "uuid-1", onboarding_token: "token-1", company_name: "Kianda Logística, Lda" });
     await fillCompany(result);
     await act(async () => {
       await result.current.submitCompany();
@@ -122,7 +122,7 @@ describe("useRegisterForm — validação no cliente", () => {
 describe("useRegisterForm — passo 1 (empresa)", () => {
   it("cria a empresa, avança para o passo 2 e notifica o sucesso", async () => {
     const { result } = renderHook(() => useRegisterForm());
-    serviceMocks.createCompany.mockResolvedValueOnce({ id: "uuid-1", company_name: "Kianda Logística, Lda" });
+    serviceMocks.createCompany.mockResolvedValueOnce({ id: "uuid-1", onboarding_token: "token-1", company_name: "Kianda Logística, Lda" });
 
     await fillCompany(result);
     await act(async () => {
@@ -214,7 +214,7 @@ describe("useRegisterForm — passo 1 (empresa)", () => {
 
   it("não duplica a empresa quando o passo 1 é submetido novamente", async () => {
     const { result } = renderHook(() => useRegisterForm());
-    serviceMocks.createCompany.mockResolvedValueOnce({ id: "uuid-1" });
+    serviceMocks.createCompany.mockResolvedValueOnce({ id: "uuid-1", onboarding_token: "token-1" });
 
     await fillCompany(result);
     await act(async () => {
@@ -233,7 +233,7 @@ describe("useRegisterForm — passo 2 (utilizador administrador)", () => {
   /** Leva o formulário até ao passo 2 (empresa criada com sucesso). */
   async function reachStepTwo(result: { current: RegisterForm }) {
     serviceMocks.createCompany.mockResolvedValueOnce({
-      id: "uuid-1",
+      id: "uuid-1", onboarding_token: "token-1",
       company_name: "Kianda Logística, Lda",
     });
     await fillCompany(result);
@@ -242,7 +242,7 @@ describe("useRegisterForm — passo 2 (utilizador administrador)", () => {
     });
   }
 
-  it("cria o utilizador com o company_id devolvido no passo 1", async () => {
+  it("cria o administrador com o onboarding_token devolvido no passo 1", async () => {
     const { result } = renderHook(() => useRegisterForm());
     serviceMocks.createAdminUser.mockResolvedValueOnce({ id: "user-1" });
     await reachStepTwo(result);
@@ -259,9 +259,7 @@ describe("useRegisterForm — passo 2 (utilizador administrador)", () => {
         email: "ana@kianda.ao",
         phone_number: "923111222",
         bi_number: "000000000LA000",
-        company_id: "uuid-1",
-        role: "administrator",
-        status: "active",
+        onboarding_token: "token-1",
       }),
     );
     expect(result.current.succeeded).toBe(true);

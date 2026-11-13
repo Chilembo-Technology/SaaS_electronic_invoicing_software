@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { isSuperAdmin } from "../../features/settings/utils/session";
 
 const navigation = [
   // Link para a página inicial pública — visível também com sessão iniciada.
@@ -44,6 +45,8 @@ export function Layout() {
   const location = useLocation();
   const { user, logout, isLoggingOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Secção "Administração" (gestão da plataforma): só para o super-admin.
+  const showAdminNavigation = isSuperAdmin(user);
 
   const isActive = (href: string) => {
     // `startsWith("/")` daria sempre verdadeiro em "/" — comparação exacta.
@@ -116,6 +119,7 @@ export function Layout() {
               );
             })}
 
+            {showAdminNavigation ? (
             <div className="pt-6">
               <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Administração
@@ -142,6 +146,7 @@ export function Layout() {
                 );
               })}
             </div>
+            ) : null}
           </nav>
 
           {/* User section */}
@@ -213,6 +218,7 @@ export function Layout() {
                 );
               })}
 
+              {showAdminNavigation ? (
               <div className="pt-4">
                 <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Administração
@@ -240,6 +246,7 @@ export function Layout() {
                   );
                 })}
               </div>
+              ) : null}
               <div className="pt-4 border-t border-sidebar-border">
                 <button
                   onClick={handleLogout}

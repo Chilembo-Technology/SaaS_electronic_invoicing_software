@@ -21,13 +21,15 @@ import {
  *
  * Rotas:
  *   - POST /v1/company/store  (organization_service) -> devolve `data.id` (UUID da empresa)
- *   - POST /v1/users          (auth_service)         -> recebe esse id como `company_id`
+ *   - POST /v1/onboarding/admin (auth_service)       -> recebe o `onboarding_token` do passo 1
  */
 
 interface ApiEnvelope<T> {
   success?: boolean;
   message?: string;
   data?: T;
+  /** Só em `POST /v1/company/store`: token para criar o primeiro administrador. */
+  onboarding_token?: string;
 }
 
 /** Converte os valores do formulário nos nomes de campo exigidos pelo Laravel. */
@@ -53,24 +55,22 @@ export function toCompanyPayload(values: CompanyFormValues): CreateCompanyPayloa
 }
 
 /**
- * Converte os valores do passo 2 no payload de `POST /v1/users`.
- * `role` é fixado em "administrator" (único valor válido para o admin da empresa)
- * e `status` em "active" — evita os defaults inconsistentes do DTO do backend.
+ * Converte os valores do passo 2 no payload de `POST /v1/onboarding/admin`.
+ * A empresa e a role ("administrator") vêm do `onboarding_token` emitido no
+ * passo 1 — o backend ignora company_id/role no corpo.
  */
 export function toAdminUserPayload(
   values: AdminUserFormValues,
-  companyId: string,
+  onboardingToken: string,
 ): CreateAdminUserPayload {
   return {
+    onboarding_token: onboardingToken,
     first_name: values.firstName.trim(),
     last_name: values.lastName.trim(),
     email: values.email.trim().toLowerCase(),
     password: values.password,
     phone_number: sanitizeAngolanPhone(values.phoneNumber),
     bi_number: sanitizeBiNumber(values.biNumber),
-    company_id: companyId,
-    role: 'administrator',
-    status: 'active',
   };
 }
 
@@ -111,12 +111,22 @@ export const registerService = {
       );
     }
 
-    return company;
+    const onboardingToken = response.data?.onboarding_token;
+    if (!onboardingToken) {
+      throw new Error(
+        'A empresa foi criada, mas a API não devolveu o token de onboarding para criar o administrador.',
+      );
+    }
+
+    return { ...company, onboarding_token: onboardingToken };
   },
 
-  /** Passo 2: cria o utilizador administrador associado à empresa. */
+  /**
+   * Passo 2: cria o primeiro administrador da empresa
+   * (`POST /v1/onboarding/admin`, com o onboarding_token do passo 1).
+   */
   async createAdminUser(payload: CreateAdminUserPayload): Promise<RegisteredUser> {
-    const response = await authApi.post<ApiEnvelope<RegisteredUser>>('/v1/users', payload);
+    const response = await authApi.post<ApiEnvelope<RegisteredUser>>('/v1/onboarding/admin', payload);
     return response.data?.data as RegisteredUser;
   },
 };

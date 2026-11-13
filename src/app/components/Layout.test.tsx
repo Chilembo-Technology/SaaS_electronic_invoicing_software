@@ -98,4 +98,25 @@ describe('Layout — botão "Sair da Conta"', () => {
 
     expect(screen.getAllByRole("link", { name: "Início" })[0]).toHaveAttribute("href", "/");
   });
+
+  it.each(["administrator", "operator", "viewer"])('esconde a secção "Administração" (Empresas) ao %s', (role) => {
+    const original = authMocks.user;
+    authMocks.user = { ...original, role, roles: [role] } as typeof original;
+
+    renderLayout();
+
+    expect(screen.queryByText("Administração")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Empresas" })).not.toBeInTheDocument();
+    authMocks.user = original;
+  });
+
+  it('mostra a secção "Administração" (Empresas) ao super-admin', () => {
+    const original = authMocks.user;
+    authMocks.user = { ...original, roles: ["super-admin"] } as typeof original;
+
+    renderLayout();
+
+    expect(screen.getAllByRole("link", { name: "Empresas" })[0]).toHaveAttribute("href", "/empresas");
+    authMocks.user = original;
+  });
 });

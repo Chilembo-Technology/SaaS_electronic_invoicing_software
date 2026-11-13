@@ -34,7 +34,11 @@ interface RawCompany {
   province?: string;
   country?: string;
   agt_certificate_number?: string;
-  private_key_path?: string | null;
+  has_private_key?: boolean | null;
+  website?: string | null;
+  share_capital?: string | number | null;
+  swift_bic?: string | null;
+  is_financial_institution?: boolean | null;
   status?: string;
   created_at?: string | null;
   updated_at?: string | null;
@@ -69,7 +73,11 @@ export function mapCompany(raw: RawCompany | null | undefined): CompanySettings 
     province: company.province ?? '',
     country: company.country ?? '',
     agt_certificate_number: company.agt_certificate_number ?? '',
-    private_key_path: company.private_key_path ?? null,
+    has_private_key: company.has_private_key === true,
+    website: company.website ?? '',
+    share_capital: company.share_capital != null ? String(company.share_capital) : '',
+    swift_bic: company.swift_bic ?? '',
+    is_financial_institution: company.is_financial_institution === true,
     status: company.status ?? '',
     created_at: company.created_at ?? null,
     updated_at: company.updated_at ?? null,

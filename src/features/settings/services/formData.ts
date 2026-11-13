@@ -42,6 +42,12 @@ export function buildCompanyFormData(payload: UpdateCompanyPayload): FormData {
   appendIfPresent(form, 'province', payload.province);
   appendIfPresent(form, 'agt_certificate_number', payload.agt_certificate_number);
 
+  // Rodapé dos documentos (is_financial_institution NUNCA é enviado: só o
+  // super-admin o altera, por rota própria — o update devolve 422 se vier).
+  appendIfPresent(form, 'website', payload.website);
+  appendIfPresent(form, 'share_capital', payload.share_capital);
+  appendIfPresent(form, 'swift_bic', payload.swift_bic);
+
   // Dados bancários (corporate account)
   appendIfPresent(form, 'corporate_account_id', payload.corporate_account_id);
   appendIfPresent(form, 'bank_id', payload.bank_id);

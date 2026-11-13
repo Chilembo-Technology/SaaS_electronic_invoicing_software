@@ -47,6 +47,20 @@ export interface InvoiceLine {
   tax_percentage?: number;
   tax_exemption_reason?: string | null;
   tax_exemption_code?: string | null;
+  /** Factura Genérica — conta, data/hora e referência do movimento. */
+  account_group_id?: string | null;
+  movement_at?: string | null;
+  movement_reference?: string | null;
+}
+
+/** Conta bancária de uma Factura Genérica (agrupamento das linhas). */
+export interface InvoiceAccountGroup {
+  id?: string;
+  position?: number;
+  account_number: string;
+  service_location_code?: string | null;
+  service_location_name: string;
+  currency_code: string;
 }
 
 export interface InvoicePayment {
@@ -93,6 +107,10 @@ export interface Invoice {
   tax_payable?: number;
   net_total?: number;
   gross_total?: number;
+  currency_code?: string | null;
+  billing_period_start?: string | null;
+  billing_period_end?: string | null;
+  account_groups?: InvoiceAccountGroup[];
   lines?: InvoiceLine[];
   payments?: InvoicePayment[];
   references?: InvoiceReference[];
@@ -176,4 +194,41 @@ export interface CreateInvoicePayload {
   origin_address?: string;
   destination_city?: string;
   destination_address?: string;
+}
+
+/** Movimento (linha) de uma conta na Factura Genérica. */
+export interface CreateGenericInvoiceMovement {
+  /** Data e hora do movimento (`YYYY-MM-DD HH:mm:ss`). */
+  movement_at: string;
+  movement_reference?: string;
+  product_code: string;
+  product_description: string;
+  quantity: number;
+  unit_price: number;
+  tax_type?: TaxType;
+  tax_code?: string;
+  tax_percentage?: number;
+  tax_exemption_reason?: string;
+  tax_exemption_code?: string;
+}
+
+/** Conta (agrupamento) enviada na criação da Factura Genérica. */
+export interface CreateGenericInvoiceAccount {
+  account_number: string;
+  service_location_code?: string;
+  service_location_name: string;
+  currency_code: string;
+  lines: CreateGenericInvoiceMovement[];
+}
+
+/** Payload de `POST /api/v1/invoices/generic-invoice` (CreateGenericInvoiceRequest). */
+export interface CreateGenericInvoicePayload {
+  customer_code: string;
+  customer_name?: string;
+  customer_tax_id?: string;
+  invoice_date: string;
+  currency_code: string;
+  billing_period_start: string;
+  billing_period_end: string;
+  accounts: CreateGenericInvoiceAccount[];
 }

@@ -74,15 +74,17 @@ export interface CreateCompanyPayload {
 
 /** Payload real enviado para `POST /v1/users` (nomes do Laravel). */
 export interface CreateAdminUserPayload {
+  /**
+   * Token de onboarding devolvido no registo da empresa (30 min, uso único).
+   * A empresa e a role ("administrator") vêm do token, não do pedido.
+   */
+  onboarding_token: string;
   first_name: string;
   last_name: string;
   email: string;
   password: string;
   phone_number: string;
   bi_number: string;
-  company_id: string;
-  role: string;
-  status: string;
 }
 
 /** Empresa devolvida pelo organization_service (apenas o que o registo usa). */
@@ -91,6 +93,8 @@ export interface RegisteredCompany {
   company_name?: string;
   tax_number?: string;
   admin_email?: string;
+  /** Token para criar o primeiro administrador (POST /v1/onboarding/admin). */
+  onboarding_token: string;
 }
 
 /** Utilizador devolvido pelo auth_service após o registo. */

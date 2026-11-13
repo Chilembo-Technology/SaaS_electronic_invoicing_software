@@ -42,6 +42,7 @@ import {
   NC_OPERATION_TYPES,
   PAYMENT_MECHANISM_OPTIONS,
   invoiceTypeLabel,
+  isFinancialInstitutionOnlyType,
 } from '../constants';
 import type {
   CreateInvoicePayload,
@@ -149,12 +150,16 @@ function NumberField({
   );
 }
 
-/** Resolve o tipo pedido na rota; tipos inválidos caem para a factura (FT). */
+/**
+ * Resolve o tipo pedido na rota; tipos inválidos caem para a factura (FT).
+ * A Factura Genérica (GF) tem página própria (`GenericInvoiceCreatePage`),
+ * por isso nunca é tratada por este formulário genérico.
+ */
 function resolveType(raw: string | undefined): InvoiceType {
   const normalized = (raw ?? 'FT').toUpperCase();
-  const known = CREATE_INVOICE_TYPE_OPTIONS.some(
-    (option) => option.value === normalized,
-  );
+  const known =
+    !isFinancialInstitutionOnlyType(normalized) &&
+    CREATE_INVOICE_TYPE_OPTIONS.some((option) => option.value === normalized);
   return (known ? normalized : 'FT') as InvoiceType;
 }
 export function InvoiceCreatePage() {

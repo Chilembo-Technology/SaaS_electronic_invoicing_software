@@ -61,7 +61,7 @@ describe("toCompanyPayload", () => {
 });
 
 describe("toAdminUserPayload", () => {
-  it("liga o utilizador à empresa e fixa a role/estado do registo público", () => {
+  it("envia o onboarding_token (a empresa e a role vêm do token, não do pedido)", () => {
     const payload = toAdminUserPayload(
       {
         ...emptyAdminUserValues,
@@ -72,19 +72,17 @@ describe("toAdminUserPayload", () => {
         biNumber: "000000000la000",
         password: "segredo123",
       },
-      "uuid-da-empresa",
+      "token-de-onboarding",
     );
 
     expect(payload).toEqual({
+      onboarding_token: "token-de-onboarding",
       first_name: "Ana",
       last_name: "Silva",
       email: "ana@kianda.ao",
       password: "segredo123",
       phone_number: "923111222",
       bi_number: "000000000LA000",
-      company_id: "uuid-da-empresa",
-      role: "administrator",
-      status: "active",
     });
   });
 });
@@ -92,7 +90,11 @@ describe("toAdminUserPayload", () => {
 describe("registerService.createCompany", () => {
   it("envia JSON quando não há logotipo e devolve a empresa criada", async () => {
     mocks.orgPost.mockResolvedValueOnce({
-      data: { success: true, data: { id: "uuid-1", company_name: "Kianda Logística, Lda" } },
+      data: {
+        success: true,
+        data: { id: "uuid-1", company_name: "Kianda Logística, Lda" },
+        onboarding_token: "token-1",
+      },
     });
 
     const company = await registerService.createCompany(toCompanyPayload(companyValues));
@@ -103,10 +105,11 @@ describe("registerService.createCompany", () => {
     expect(body).toEqual(toCompanyPayload(companyValues));
     expect(config).toBeUndefined();
     expect(company.id).toBe("uuid-1");
+    expect(company.onboarding_token).toBe("token-1");
   });
 
   it("envia multipart/form-data quando existe logotipo", async () => {
-    mocks.orgPost.mockResolvedValueOnce({ data: { success: true, data: { id: "uuid-2" } } });
+    mocks.orgPost.mockResolvedValueOnce({ data: { success: true, data: { id: "uuid-2" }, onboarding_token: "token-2" } });
     const logo = new File(["conteudo"], "logo.png", { type: "image/png" });
 
     await registerService.createCompany(toCompanyPayload(companyValues), logo);
@@ -131,22 +134,32 @@ describe("registerService.createCompany", () => {
       /não devolveu o identificador/i,
     );
   });
+
+  it("falha quando a API não devolve o token de onboarding", async () => {
+    mocks.orgPost.mockResolvedValueOnce({ data: { success: true, data: { id: "uuid-3" } } });
+
+    await expect(registerService.createCompany(toCompanyPayload(companyValues))).rejects.toThrow(
+      /token de onboarding/i,
+    );
+  });
 });
 
 describe("registerService.createAdminUser", () => {
-  it("publica o utilizador em /v1/users e devolve a resposta", async () => {
+  it("cria o administrador em /v1/onboarding/admin com o token e devolve a resposta", async () => {
     mocks.authPost.mockResolvedValueOnce({
       data: { success: true, data: { id: "user-1", email: "ana@kianda.ao" } },
     });
 
     const user = await registerService.createAdminUser(
-      toAdminUserPayload({ ...emptyAdminUserValues, email: "ana@kianda.ao" }, "uuid-1"),
+      toAdminUserPayload({ ...emptyAdminUserValues, email: "ana@kianda.ao" }, "token-1"),
     );
 
     expect(mocks.authPost).toHaveBeenCalledWith(
-      "/v1/users",
-      expect.objectContaining({ company_id: "uuid-1", role: "administrator", status: "active" }),
+      "/v1/onboarding/admin",
+      expect.objectContaining({ onboarding_token: "token-1" }),
     );
+    expect(mocks.authPost.mock.calls[0][1]).not.toHaveProperty("company_id");
+    expect(mocks.authPost.mock.calls[0][1]).not.toHaveProperty("role");
     expect(user.id).toBe("user-1");
   });
 });

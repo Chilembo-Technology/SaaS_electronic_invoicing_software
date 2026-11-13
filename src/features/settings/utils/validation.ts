@@ -105,6 +105,21 @@ export function validateCompanyFields(values: CompanyFormValues): CompanyFieldEr
     errors.agt_certificate_number = MESSAGES.agtMax;
   }
 
+  // Rodapé dos documentos — opcionais, mas validados se preenchidos.
+  const website = values.website.trim();
+  if (website && !/^https?:\/\/\S+$/i.test(website)) {
+    errors.website = 'O site deve ser um URL válido (ex.: https://www.empresa.ao).';
+  }
+
+  if (values.share_capital.trim() && !/^\d+(\.\d{1,2})?$/.test(values.share_capital.trim())) {
+    errors.share_capital = 'O capital social deve ser um valor numérico (ex.: 1000000.00).';
+  }
+
+  const swift = values.swift_bic.trim().toUpperCase();
+  if (swift && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(swift)) {
+    errors.swift_bic = 'O código SWIFT/BIC deve ter 8 ou 11 caracteres (ex.: BAIPAOLU).';
+  }
+
   // Dados bancários (corporate account) — opcionais, mas validados se preenchidos.
   if (values.bank_id.trim() && !UUID_REGEX.test(values.bank_id.trim())) {
     errors.bank_id = SETTINGS_MESSAGES.bankIdInvalid;

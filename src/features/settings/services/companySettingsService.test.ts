@@ -139,6 +139,50 @@ describe('companySettingsService.updateCompany', () => {
 
 describe('mapCompany', () => {
   it('normaliza nulos em strings vazias', () => {
-    expect(mapCompany(null)).toMatchObject({ id: '', company_name: '', private_key_path: null });
+    expect(mapCompany(null)).toMatchObject({ id: '', company_name: '', has_private_key: false });
+  });
+
+  it('mapeia os campos do rodapé e a indicação de instituição financeira (default false)', () => {
+    expect(mapCompany(null)).toMatchObject({
+      website: '',
+      share_capital: '',
+      swift_bic: '',
+      is_financial_institution: false,
+    });
+
+    expect(
+      mapCompany({
+        id: 'b1',
+        website: 'https://www.banco.ao',
+        share_capital: '1000000.00',
+        swift_bic: 'BAIPAOLU',
+        is_financial_institution: true,
+      }),
+    ).toMatchObject({
+      website: 'https://www.banco.ao',
+      share_capital: '1000000.00',
+      swift_bic: 'BAIPAOLU',
+      is_financial_institution: true,
+    });
+  });
+});
+
+describe('companySettingsService.updateCompany — rodapé', () => {
+  it('envia website, capital social e SWIFT/BIC, mas nunca is_financial_institution', async () => {
+    mocks.post.mockResolvedValueOnce({ data: { success: true, data: { id: 'c1' } } });
+    mocks.get.mockResolvedValueOnce({ data: { success: true, data: [{ id: 'c1' }] } });
+
+    await companySettingsService.updateCompany({
+      company_id: 'c1',
+      website: 'https://www.banco.ao',
+      share_capital: '1000000.00',
+      swift_bic: 'BAIPAOLU',
+    });
+
+    const formData = mocks.post.mock.calls.at(-1)?.[1] as FormData;
+    expect(formData.get('website')).toBe('https://www.banco.ao');
+    expect(formData.get('share_capital')).toBe('1000000.00');
+    expect(formData.get('swift_bic')).toBe('BAIPAOLU');
+    expect(formData.has('is_financial_institution')).toBe(false);
   });
 });

@@ -6,7 +6,6 @@ import { Produtos } from "./pages/Produtos";
 import { EmitirFatura } from "./pages/EmitirFatura";
 import { Relatorios } from "./pages/Relatorios";
 import { Usuarios } from "./pages/Usuarios";
-import { Empresas } from "./pages/Empresas";
 import { Planos } from "./pages/Planos";
 import { Layout } from "./components/Layout";
 
@@ -15,9 +14,16 @@ import { SettingsLayout } from "../features/settings/pages/SettingsLayout";
 import { CompanySettingsPage } from "../features/settings/pages/CompanySettingsPage";
 import { ProfileSettingsPage } from "../features/settings/pages/ProfileSettingsPage";
 import { UsersSettingsPage } from "../features/settings/pages/UsersSettingsPage";
-import { RequireAdmin, RequireAuth } from "../features/settings/components/RouteGuards";
+import {
+  RequireAdmin,
+  RequireAuth,
+  RequireFinancialInstitution,
+  RequireSuperAdmin,
+} from "../features/settings/components/RouteGuards";
 
 // Páginas da funcionalidade de Faturas (fiscal_core) — rota em inglês.
+import { CompaniesAdminPage } from "../features/platform-admin/pages/CompaniesAdminPage";
+import { GenericInvoiceCreatePage } from "../features/invoices/pages/GenericInvoiceCreatePage";
 import { InvoiceCreatePage } from "../features/invoices/pages/InvoiceCreatePage";
 import { InvoiceListPage } from "../features/invoices/pages/InvoiceListPage";
 
@@ -115,6 +121,17 @@ export const router = createBrowserRouter([
         Component: InvoiceListPage,
       },
       {
+        // Factura Genérica: rota estática (tem prioridade sobre `:type` e, como
+        // as rotas não são case-sensitive, também apanha `/invoices/create/gf`).
+        // Só instituições financeiras — o fiscal_core recusa as restantes (403).
+        path: "invoices/create/GF",
+        element: (
+          <RequireFinancialInstitution>
+            <GenericInvoiceCreatePage />
+          </RequireFinancialInstitution>
+        ),
+      },
+      {
         path: "invoices/create/:type",
         Component: InvoiceCreatePage,
       },
@@ -205,8 +222,13 @@ export const router = createBrowserRouter([
         Component: Usuarios,
       },
       {
+        // Gestão de todas as empresas da plataforma: só super-admin.
         path: "empresas",
-        Component: Empresas,
+        element: (
+          <RequireSuperAdmin>
+            <CompaniesAdminPage />
+          </RequireSuperAdmin>
+        ),
       },
       {
         path: "planos",

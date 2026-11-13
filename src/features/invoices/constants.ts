@@ -16,7 +16,7 @@ export const INVOICE_TYPE_LABELS: Record<string, string> = {
   RG: 'Recibo',
   GT: 'Guia de transporte',
   GR: 'Guia de remessa',
-  GF: 'Guia de facturação',
+  GF: 'Factura genérica',
   FG: 'Factura de guia',
   AC: 'Aviso de cobrança',
   AR: 'Aviso de cobrança/recibo',
@@ -57,6 +57,7 @@ export const FILTERABLE_INVOICE_TYPES = [
   'RG',
   'GT',
   'GR',
+  'GF',
 ] as const;
 
 /** Opções para selects de filtro por tipo de documento. */
@@ -120,7 +121,7 @@ export const CREATE_PAGE_TITLES: Record<string, string> = {
   RG: 'Novo Recibo',
   GT: 'Nova Guia de transporte',
   GR: 'Nova Guia de remessa',
-  GF: 'Nova Guia de facturação',
+  GF: 'Nova Factura genérica',
   FG: 'Nova Factura de guia',
   AC: 'Novo Aviso de cobrança',
   AR: 'Novo Aviso de cobrança/recibo',
@@ -134,3 +135,21 @@ export function invoiceTypeLabel(type?: string | null): string {
   if (!type) return '—';
   return INVOICE_TYPE_LABELS[type] ?? type;
 }
+
+/**
+ * Tipos de documento exclusivos de instituições financeiras (bancos). O
+ * fiscal_core recusa-os com 403 para as restantes empresas; a UI esconde-os.
+ */
+export const FINANCIAL_INSTITUTION_ONLY_TYPES: readonly string[] = ['GF'];
+
+/** Indica se o tipo de documento é exclusivo de instituições financeiras. */
+export function isFinancialInstitutionOnlyType(type?: string | null): boolean {
+  return FINANCIAL_INSTITUTION_ONLY_TYPES.includes((type ?? '').toUpperCase());
+}
+
+/** Moedas aceites na Factura Genérica (uma moeda por documento). */
+export const GF_CURRENCY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'AOA', label: 'AOA — Kwanza' },
+  { value: 'USD', label: 'USD — Dólar norte-americano' },
+  { value: 'EUR', label: 'EUR — Euro' },
+];
