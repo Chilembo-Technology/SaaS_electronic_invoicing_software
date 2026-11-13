@@ -159,9 +159,7 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
     }
   };
 
-  const currentPrivateKey = company.private_key_path
-    ? company.private_key_path.split('/').pop()
-    : null;
+  const hasPrivateKey = company.has_private_key;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
@@ -411,7 +409,7 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
             Chave privada (certificado AGT)
           </Label>
           <p className="mt-1 text-xs text-muted-foreground">
-            {currentPrivateKey ? `Ficheiro atual: ${currentPrivateKey}` : 'Nenhum ficheiro carregado.'}
+            {hasPrivateKey ? 'Chave privada carregada.' : 'Nenhum ficheiro carregado.'}
           </p>
           <Input
             id="private_key"

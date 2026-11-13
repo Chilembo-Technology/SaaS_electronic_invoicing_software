@@ -139,7 +139,7 @@ describe('companySettingsService.updateCompany', () => {
 
 describe('mapCompany', () => {
   it('normaliza nulos em strings vazias', () => {
-    expect(mapCompany(null)).toMatchObject({ id: '', company_name: '', private_key_path: null });
+    expect(mapCompany(null)).toMatchObject({ id: '', company_name: '', has_private_key: false });
   });
 
   it('mapeia os campos do rodapé e a indicação de instituição financeira (default false)', () => {

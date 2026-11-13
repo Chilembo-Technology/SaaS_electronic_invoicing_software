@@ -53,8 +53,8 @@ export interface CompanySettings {
   province: string;
   country: string;
   agt_certificate_number: string;
-  /** Caminho do ficheiro da chave privada (dado sensível, só leitura). */
-  private_key_path: string | null;
+  /** Indica se a empresa tem chave privada carregada (o caminho nunca sai da API). */
+  has_private_key: boolean;
   /** Site (rodapé dos documentos). */
   website: string;
   /** Capital social (rodapé dos documentos), como string decimal. */
