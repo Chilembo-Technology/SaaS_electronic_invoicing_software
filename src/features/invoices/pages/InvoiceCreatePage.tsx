@@ -52,6 +52,7 @@ import type {
   TaxType,
 } from '../types';
 import type { Product, ProductType } from '../../products/types';
+import { todayInAngola } from '@/lib/angolaTime';
 
 interface LineDraft {
   id: string;
@@ -79,8 +80,9 @@ function makeLine(): LineDraft {
   };
 }
 
+// Dia de Angola: o backend valida a data contra o dia de Luanda, não o dia UTC.
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInAngola();
 }
 
 function toNumber(value: string): number {

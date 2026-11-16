@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2, Eye, Save, Send, ArrowLeft, Info, ChevronDown, AlertCircle, CheckCircle } from "lucide-react";
 import { Link, useLocation } from "react-router";
+import { todayInAngola } from "@/lib/angolaTime";
 
 interface Item {
   id: number;
@@ -44,7 +45,7 @@ export function EmitirFatura() {
   const backHref = isClientePanel ? "/cliente/faturas" : "/invoices";
 
   const [serie, setSerie] = useState("FT-001");
-  const [data, setData] = useState(new Date().toISOString().split("T")[0]);
+  const [data, setData] = useState(todayInAngola());
   const [clienteId, setClienteId] = useState("");
   const [vencimento, setVencimento] = useState("");
   const [retencaoAtiva, setRetencaoAtiva] = useState(false);
