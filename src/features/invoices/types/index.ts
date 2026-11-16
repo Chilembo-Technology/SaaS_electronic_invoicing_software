@@ -30,7 +30,7 @@ export type TaxType = 'IVA' | 'IS' | 'NS';
 /** Tipo de operação de uma nota de crédito (CreateCreditNoteRequest). */
 export type CreditNoteOperationType = 'Rectificação' 
 /** SAF-T WithholdingTaxType aceite no recibo (RG). */
-export type RetentionType = 'IVA' | 'IS';
+export type RetentionType = 'IRT' | 'II' | 'IS' | 'IVA' | 'IPU' | 'IAC' | 'OU';
 | 'Anulação';
 
 /** Linha de documento devolvida pelo `InvoiceResource`. */
@@ -189,6 +189,8 @@ export interface CreateInvoicePayload {
   retention_amount?: number;
   /** Tipo de retenção/cativação (SAF-T WithholdingTaxType) — obrigatório se retention_amount > 0. */
   retention_type?: RetentionType;
+  /** WithholdingTaxDescription (máx. 60) — obrigatória no IS (código da verba). */
+  retention_description?: string;
   amount_paid?: number;
   amount_due?: number;
   payment_mechanism?: string;

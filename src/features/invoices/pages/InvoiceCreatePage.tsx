@@ -41,6 +41,7 @@ import {
   CREATE_PAGE_TITLES,
   NC_OPERATION_TYPES,
   PAYMENT_MECHANISM_OPTIONS,
+  RETENTION_DESCRIPTION_MAX_LENGTH,
   RETENTION_TYPES,
   invoiceTypeLabel,
   isFinancialInstitutionOnlyType,
@@ -55,6 +56,7 @@ import type {
 } from '../types';
 import type { Product, ProductType } from '../../products/types';
 import { todayInAngola } from '@/lib/angolaTime';
+import { validateRetention } from '../utils/retention';
 
 interface LineDraft {
   id: string;
@@ -228,6 +230,7 @@ export function InvoiceCreatePage() {
   const [invoiceTotal, setInvoiceTotal] = useState('');
   const [retentionAmount, setRetentionAmount] = useState('');
   const [retentionType, setRetentionType] = useState<RetentionType | ''>('');
+  const [retentionDescription, setRetentionDescription] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
   const [amountDue, setAmountDue] = useState('');
   const [paymentMechanism, setPaymentMechanism] = useState('');
@@ -506,12 +509,18 @@ export function InvoiceCreatePage() {
       payload.invoice_total = toNumber(invoiceTotal);
       payload.retention_amount =
         retentionAmount.trim() === '' ? undefined : toNumber(retentionAmount);
-      if ((payload.retention_amount ?? 0) > 0) {
-        if (!retentionType) {
-          setLocalError('Indique o tipo de retenção/cativação.');
-          return;
-        }
+      const retentionError = validateRetention({
+        amount: payload.retention_amount ?? 0,
+        type: retentionType,
+        description: retentionDescription,
+      });
+      if (retentionError) {
+        setLocalError(retentionError);
+        return;
+      }
+      if ((payload.retention_amount ?? 0) > 0 && retentionType) {
         payload.retention_type = retentionType;
+        payload.retention_description = retentionDescription.trim() || undefined;
       }
       payload.amount_paid = toNumber(amountPaid);
       payload.amount_due = toNumber(amountDue);
@@ -905,6 +914,22 @@ export function InvoiceCreatePage() {
                     <FieldError message={fieldErrors.retentionType} />
                   ) : null}
                 </div>
+              ) : null}
+              {toNumber(retentionAmount) > 0 ? (
+                <FormField
+                  id="retention_description"
+                  label={
+                    retentionType === 'IS'
+                      ? 'Código da verba (Imposto do Selo)'
+                      : 'Descrição da retenção (opcional)'
+                  }
+                  required={retentionType === 'IS'}
+                  value={retentionDescription}
+                  onChange={setRetentionDescription}
+                  placeholder={retentionType === 'IS' ? 'Verba 23.3' : 'Ex.: Retenção na fonte'}
+                  maxLength={RETENTION_DESCRIPTION_MAX_LENGTH}
+                  error={fieldErrors.retentionDescription}
+                />
               ) : null}
               <NumberField
                 id="amount_paid"

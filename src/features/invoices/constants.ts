@@ -101,11 +101,22 @@ export const CREATE_INVOICE_TYPE_OPTIONS: { value: string; label: string }[] =
 /** Tipos de operação aceites numa nota de crédito (CreateCreditNoteRequest). */
 export const NC_OPERATION_TYPES = ['Rectificação', 'Anulação'] as const;
 
-/** Tipos de retenção/cativação aceites no recibo (SAF-T WithholdingTaxType). */
+/**
+ * Tipos de retenção na fonte (SAF-T WithholdingTaxType) —
+ * Decreto Executivo 317/20, campos 4.1.4.21.1 e 4.4.4.16.1.
+ */
 export const RETENTION_TYPES = [
-  { value: 'IVA', label: 'IVA (cativação)' },
-  { value: 'IS', label: 'Imposto do Selo' },
+  { value: 'IRT', label: 'IRT — Rendimento do Trabalho' },
+  { value: 'II', label: 'II — Imposto Industrial' },
+  { value: 'IS', label: 'IS — Imposto do Selo' },
+  { value: 'IVA', label: 'IVA — IVA cativo' },
+  { value: 'IPU', label: 'IPU — Predial Urbano' },
+  { value: 'IAC', label: 'IAC — Aplicação de Capitais' },
+  { value: 'OU', label: 'OU — Outros' },
 ] as const;
+
+/** SAF-T WithholdingTaxDescription: máximo de caracteres. */
+export const RETENTION_DESCRIPTION_MAX_LENGTH = 60;
 
 /** Mecanismos de pagamento aceites pela factura-recibo (FR). */
 export const PAYMENT_MECHANISM_OPTIONS: { value: string; label: string }[] = [
