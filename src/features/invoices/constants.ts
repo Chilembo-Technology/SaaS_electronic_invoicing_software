@@ -101,6 +101,12 @@ export const CREATE_INVOICE_TYPE_OPTIONS: { value: string; label: string }[] =
 /** Tipos de operação aceites numa nota de crédito (CreateCreditNoteRequest). */
 export const NC_OPERATION_TYPES = ['Rectificação', 'Anulação'] as const;
 
+/** Tipos de retenção/cativação aceites no recibo (SAF-T WithholdingTaxType). */
+export const RETENTION_TYPES = [
+  { value: 'IVA', label: 'IVA (cativação)' },
+  { value: 'IS', label: 'Imposto do Selo' },
+] as const;
+
 /** Mecanismos de pagamento aceites pela factura-recibo (FR). */
 export const PAYMENT_MECHANISM_OPTIONS: { value: string; label: string }[] = [
   { value: 'NU', label: 'Numerário' },

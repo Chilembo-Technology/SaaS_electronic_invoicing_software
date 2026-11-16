@@ -41,6 +41,7 @@ import {
   CREATE_PAGE_TITLES,
   NC_OPERATION_TYPES,
   PAYMENT_MECHANISM_OPTIONS,
+  RETENTION_TYPES,
   invoiceTypeLabel,
   isFinancialInstitutionOnlyType,
 } from '../constants';
@@ -49,6 +50,7 @@ import type {
   CreditNoteOperationType,
   InvoiceType,
   PaymentDraft,
+  RetentionType,
   TaxType,
 } from '../types';
 import type { Product, ProductType } from '../../products/types';
@@ -202,6 +204,7 @@ export function InvoiceCreatePage() {
   const isReceipt = type === 'RG';
   const isInvoiceReceipt = type === 'FR';
   const isCreditNote = type === 'NC';
+  const isDebitNote = type === 'ND';
   const isTransportGuide = type === 'GT';
   const isDeliveryNote = type === 'GR';
   const usesLineAmount = isTransportGuide || isDeliveryNote;
@@ -224,6 +227,7 @@ export function InvoiceCreatePage() {
   const [taxTotal, setTaxTotal] = useState('');
   const [invoiceTotal, setInvoiceTotal] = useState('');
   const [retentionAmount, setRetentionAmount] = useState('');
+  const [retentionType, setRetentionType] = useState<RetentionType | ''>('');
   const [amountPaid, setAmountPaid] = useState('');
   const [amountDue, setAmountDue] = useState('');
   const [paymentMechanism, setPaymentMechanism] = useState('');
@@ -502,6 +506,13 @@ export function InvoiceCreatePage() {
       payload.invoice_total = toNumber(invoiceTotal);
       payload.retention_amount =
         retentionAmount.trim() === '' ? undefined : toNumber(retentionAmount);
+      if ((payload.retention_amount ?? 0) > 0) {
+        if (!retentionType) {
+          setLocalError('Indique o tipo de retenção/cativação.');
+          return;
+        }
+        payload.retention_type = retentionType;
+      }
       payload.amount_paid = toNumber(amountPaid);
       payload.amount_due = toNumber(amountDue);
       payload.payment_mechanism = paymentMechanism.trim() || undefined;
@@ -561,6 +572,19 @@ export function InvoiceCreatePage() {
         payload.operation_type = operationType;
         payload.rectification_reason = rectificationReason.trim();
         payload.source_document = sourceDocument.trim();
+      }
+
+      if (isDebitNote) {
+        if (!sourceDocument.trim()) {
+          setLocalError('O documento de origem é obrigatório.');
+          return;
+        }
+        if (!rectificationReason.trim()) {
+          setLocalError('O motivo da nota de débito é obrigatório.');
+          return;
+        }
+        payload.source_document = sourceDocument.trim();
+        payload.rectification_reason = rectificationReason.trim();
       }
 
       if (isTransportGuide) {
@@ -850,6 +874,38 @@ export function InvoiceCreatePage() {
                 onChange={setRetentionAmount}
                 error={fieldErrors.retentionAmount}
               />
+              {toNumber(retentionAmount) > 0 ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="retention_type">
+                    Tipo de retenção/cativação
+                    <span className="text-destructive" aria-hidden="true">
+                      *
+                    </span>
+                  </Label>
+                  <Select
+                    value={retentionType}
+                    onValueChange={(value) => setRetentionType(value as RetentionType)}
+                  >
+                    <SelectTrigger
+                      className="bg-muted border-none"
+                      id="retention_type"
+                      aria-invalid={Boolean(fieldErrors.retentionType)}
+                    >
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RETENTION_TYPES.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fieldErrors.retentionType ? (
+                    <FieldError message={fieldErrors.retentionType} />
+                  ) : null}
+                </div>
+              ) : null}
               <NumberField
                 id="amount_paid"
                 label="Valor pago"
@@ -924,6 +980,36 @@ export function InvoiceCreatePage() {
                 value={rectificationReason}
                 onChange={setRectificationReason}
                 placeholder="Correcção do valor facturado"
+                maxLength={50}
+                error={fieldErrors.rectificationReason}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {isDebitNote ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Dados da nota de débito</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                id="source_document"
+                label="Documento de origem"
+                required
+                value={sourceDocument}
+                onChange={setSourceDocument}
+                placeholder="FT 2026/100"
+                error={fieldErrors.sourceDocument}
+              />
+              <FormField
+                id="rectification_reason"
+                label="Motivo"
+                required
+                value={rectificationReason}
+                onChange={setRectificationReason}
+                placeholder="Juros de mora"
+                maxLength={50}
                 error={fieldErrors.rectificationReason}
               />
             </CardContent>

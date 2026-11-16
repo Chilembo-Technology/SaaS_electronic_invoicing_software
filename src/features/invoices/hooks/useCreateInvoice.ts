@@ -20,6 +20,7 @@ const FIELD_MAP: Record<string, string> = {
   tax_total: 'taxTotal',
   invoice_total: 'invoiceTotal',
   retention_amount: 'retentionAmount',
+  retention_type: 'retentionType',
   amount_paid: 'amountPaid',
   amount_due: 'amountDue',
   payment_mechanism: 'paymentMechanism',
