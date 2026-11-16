@@ -15,6 +15,7 @@ const FIELD_MAP: Record<string, string> = {
   customer_code: 'customerCode',
   invoice_date: 'invoiceDate',
   currency_code: 'currencyCode',
+  exchange_rate: 'exchangeRate',
   billing_period_start: 'billingPeriodStart',
   billing_period_end: 'billingPeriodEnd',
   accounts: 'accounts',

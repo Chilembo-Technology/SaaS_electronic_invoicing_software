@@ -138,3 +138,26 @@ describe('Factura Genérica — validação', () => {
     expect(validateGenericInvoiceForm(form([account]))).toMatch(/motivo da não aplicação/);
   });
 });
+
+describe('Factura Genérica — moeda estrangeira', () => {
+  it('em AOA não pede câmbio nem o envia', () => {
+    const payload = buildGenericInvoicePayload(form([exemplarAccount()]));
+
+    expect(validateGenericInvoiceForm(form([exemplarAccount()]))).toBeNull();
+    expect(payload.exchange_rate).toBeUndefined();
+  });
+
+  it('noutra moeda exige o câmbio para AOA', () => {
+    const usd = { ...form([exemplarAccount()]), currencyCode: 'USD' };
+
+    expect(validateGenericInvoiceForm(usd)).toMatch(/taxa de câmbio/);
+    expect(validateGenericInvoiceForm({ ...usd, exchangeRate: '0' })).toMatch(/taxa de câmbio/);
+  });
+
+  it('noutra moeda envia o câmbio indicado', () => {
+    const usd = { ...form([exemplarAccount()]), currencyCode: 'USD', exchangeRate: '925.5' };
+
+    expect(validateGenericInvoiceForm(usd)).toBeNull();
+    expect(buildGenericInvoicePayload(usd).exchange_rate).toBe(925.5);
+  });
+});

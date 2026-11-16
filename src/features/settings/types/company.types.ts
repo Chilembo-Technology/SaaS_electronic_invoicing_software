@@ -88,7 +88,6 @@ export interface UpdateCompanyPayload {
   website?: string;
   share_capital?: string;
   swift_bic?: string;
-  private_key?: File | null;
   logo?: File | null;
   /**
    * Dados bancários (`corporate_accounts`).

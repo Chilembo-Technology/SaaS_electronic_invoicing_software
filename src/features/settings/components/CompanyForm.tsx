@@ -1,22 +1,15 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '../../../app/components/ui/button';
-import { Input } from '../../../app/components/ui/input';
-import { Label } from '../../../app/components/ui/label';
-import { FieldError } from '../../../components/forms/FieldError';
 import { FormAlert } from '../../../components/forms/FormAlert';
 import { FormField } from '../../../components/forms/FormField';
-import {
-  LOGO_ACCEPT_ATTRIBUTE,
-  sanitizeAngolanPhone,
-  sanitizeTaxNumber,
-} from '../../auth/utils/registerValidation';
+import { sanitizeAngolanPhone, sanitizeTaxNumber } from '../../auth/utils/registerValidation';
 import { useUpdateCompany } from '../hooks/useUpdateCompany';
 import type { CompanyFormValues, CompanySettings } from '../types/company.types';
 import { pickLatestCorporateAccount } from '../utils/companyAccount';
-import { hasAnyError, validateCompanyFields, validatePrivateKeyFile } from '../utils/validation';
+import { hasAnyError, validateCompanyFields } from '../utils/validation';
 import { CompanyLogoUpload } from './CompanyLogoUpload';
 import { BankSelect } from './BankSelect';
 
@@ -76,8 +69,6 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
   const [baseline, setBaseline] = useState<CompanyFormValues>(() => toValues(company));
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CompanyFormValues, string>>>({});
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [privateKeyFile, setPrivateKeyFile] = useState<File | null>(null);
-  const [privateKeyError, setPrivateKeyError] = useState<string | undefined>(undefined);
 
   // Re-sincroniza sempre que a empresa é recarregada (ex.: após guardar).
   useEffect(() => {
@@ -85,17 +76,13 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
     setValues(next);
     setBaseline(next);
     setLogoFile(null);
-    setPrivateKeyFile(null);
-    setPrivateKeyError(undefined);
     setFormErrors({});
   }, [company]);
 
   const isDirty = useMemo(
     () =>
-      JSON.stringify(values) !== JSON.stringify(baseline) ||
-      logoFile !== null ||
-      privateKeyFile !== null,
-    [values, baseline, logoFile, privateKeyFile],
+      JSON.stringify(values) !== JSON.stringify(baseline) || logoFile !== null,
+    [values, baseline, logoFile],
   );
 
   const fieldError = (field: keyof CompanyFormValues): string | undefined =>
@@ -105,14 +92,6 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
     setValues((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handlePrivateKey = (event: ChangeEvent<HTMLInputElement>) => {
-    const selected = event.target.files?.[0] ?? null;
-    const validationError = validatePrivateKeyFile(selected);
-    setPrivateKeyError(validationError);
-    setPrivateKeyFile(validationError ? null : selected);
-    event.target.value = '';
-  };
-
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!canEdit || isSaving) return;
@@ -120,7 +99,7 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
     resetErrors();
     const errors = validateCompanyFields(values);
     setFormErrors(errors);
-    if (hasAnyError(errors) || privateKeyError) return;
+    if (hasAnyError(errors)) return;
 
     try {
       // Enviamos SEMPRE o payload completo (ver achado 3 da Fase 1): campos
@@ -148,7 +127,6 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
         account_number: values.account_number,
         holder: values.holder,
         iban: values.iban,
-        private_key: privateKeyFile,
         logo: logoFile,
       });
 
@@ -158,8 +136,6 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
       // O erro já foi normalizado para `submitError` / `serverErrors`.
     }
   };
-
-  const hasPrivateKey = company.has_private_key;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
@@ -404,28 +380,12 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
           error={serverErrors['logo']}
         />
 
-        <div>
-          <Label htmlFor="private_key" className="text-sm font-medium text-foreground">
-            Chave privada (certificado AGT)
-          </Label>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {hasPrivateKey ? 'Chave privada carregada.' : 'Nenhum ficheiro carregado.'}
-          </p>
-          <Input
-            id="private_key"
-            name="private_key"
-            type="file"
-            accept={LOGO_ACCEPT_ATTRIBUTE}
-            className="mt-1.5 h-12 rounded-xl bg-background"
-            disabled={!canEdit}
-            onChange={handlePrivateKey}
-          />
-          {privateKeyError ? (
-            <FieldError id="private_key-error" message={privateKeyError} />
-          ) : serverErrors['private_key'] ? (
-            <FieldError id="private_key-server-error" message={serverErrors['private_key']} />
-          ) : null}
-        </div>
+        {/* Decreto 74/19, ponto 5: os documentos são assinados com a chave do
+            fabricante do software — as empresas não carregam chave privada. */}
+        <p className="text-xs text-muted-foreground">
+          A assinatura dos documentos usa a chave do fabricante do software validada pela AGT; não
+          é necessário carregar nenhuma chave privada.
+        </p>
       </div>
 
       {canEdit ? (

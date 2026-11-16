@@ -55,7 +55,6 @@ export function buildCompanyFormData(payload: UpdateCompanyPayload): FormData {
   appendIfPresent(form, 'holder', payload.holder);
   appendIfPresent(form, 'iban', payload.iban);
 
-  appendFileIfPresent(form, 'private_key', payload.private_key);
   appendFileIfPresent(form, 'logo', payload.logo);
 
   return form;

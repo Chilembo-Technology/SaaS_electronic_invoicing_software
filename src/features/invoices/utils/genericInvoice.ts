@@ -32,6 +32,8 @@ export interface GenericInvoiceForm {
   customerTaxId: string;
   invoiceDate: string;
   currencyCode: string;
+  /** Câmbio para AOA (texto do campo); obrigatório quando a moeda não é AOA. */
+  exchangeRate?: string;
   billingPeriodStart: string;
   billingPeriodEnd: string;
   accounts: AccountDraft[];
@@ -107,6 +109,9 @@ export function documentTotals(accounts: AccountDraft[]): Totals {
 export function validateGenericInvoiceForm(form: GenericInvoiceForm): string | null {
   if (!form.customerCode.trim()) return 'Selecione o cliente.';
   if (!form.invoiceDate) return 'Indique a data do documento.';
+  if (form.currencyCode !== 'AOA' && !(toNumber(form.exchangeRate ?? '') > 0)) {
+    return 'Indique a taxa de câmbio para AOA (obrigatória quando a moeda não é AOA).';
+  }
   if (!form.billingPeriodStart || !form.billingPeriodEnd) {
     return 'Indique o período de facturação (início e fim).';
   }
@@ -160,6 +165,7 @@ export function buildGenericInvoicePayload(form: GenericInvoiceForm): CreateGene
     customer_tax_id: form.customerTaxId.trim() || undefined,
     invoice_date: form.invoiceDate,
     currency_code: form.currencyCode,
+    exchange_rate: form.currencyCode !== 'AOA' ? toNumber(form.exchangeRate ?? '') : undefined,
     billing_period_start: form.billingPeriodStart,
     billing_period_end: form.billingPeriodEnd,
     accounts: form.accounts.map((account) => ({

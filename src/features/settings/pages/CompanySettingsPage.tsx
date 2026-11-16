@@ -7,7 +7,7 @@ import { CompanyForm } from '../components/CompanyForm';
 import { useCompany } from '../hooks/useCompany';
 import { isSuperAdmin } from '../utils/session';
 
-/** Sub-página "Empresa": dados fiscais, AGT, localização, logo e chave privada. */
+/** Sub-página "Empresa": dados fiscais, AGT, localização e logo. */
 export function CompanySettingsPage() {
   useDocumentTitle('Configurações · Empresa');
 

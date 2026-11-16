@@ -235,6 +235,8 @@ export interface CreateGenericInvoicePayload {
   customer_tax_id?: string;
   invoice_date: string;
   currency_code: string;
+  /** Câmbio para AOA — obrigatório quando a moeda não é AOA (assina-se o contravalor em AOA). */
+  exchange_rate?: number;
   billing_period_start: string;
   billing_period_end: string;
   accounts: CreateGenericInvoiceAccount[];

@@ -69,6 +69,7 @@ export function GenericInvoiceCreatePage() {
   const [customerTaxId, setCustomerTaxId] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(today());
   const [currencyCode, setCurrencyCode] = useState('AOA');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [billingPeriodStart, setBillingPeriodStart] = useState(firstDayOfMonth());
   const [billingPeriodEnd, setBillingPeriodEnd] = useState(today());
   const [accounts, setAccounts] = useState<AccountDraft[]>([makeAccount(today())]);
@@ -138,6 +139,7 @@ export function GenericInvoiceCreatePage() {
     customerTaxId,
     invoiceDate,
     currencyCode,
+    exchangeRate,
     billingPeriodStart,
     billingPeriodEnd,
     accounts,
@@ -267,6 +269,26 @@ export function GenericInvoiceCreatePage() {
               </Select>
               {fieldErrors.currencyCode ? <FieldError message={fieldErrors.currencyCode} /> : null}
             </div>
+            {currencyCode !== 'AOA' ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="exchange_rate">Taxa de câmbio para AOA *</Label>
+                <Input
+                  id="exchange_rate"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.000001"
+                  className="bg-muted border-none"
+                  value={exchangeRate}
+                  onChange={(event) => setExchangeRate(event.target.value)}
+                  placeholder={`AOA por 1 ${currencyCode}`}
+                />
+                <p className="text-xs text-muted-foreground">
+                  O documento é assinado com o contravalor em AOA.
+                </p>
+                {fieldErrors.exchangeRate ? <FieldError message={fieldErrors.exchangeRate} /> : null}
+              </div>
+            ) : null}
             <div className="space-y-1.5">
               <Label htmlFor="invoice_date">Data do documento *</Label>
               <Input
