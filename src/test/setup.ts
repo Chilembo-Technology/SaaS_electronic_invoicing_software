@@ -1,6 +1,15 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, vi } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
+
+/*
+ * `findBy*`/`waitFor` esperam por omissão só 1000 ms. Com a suite em paralelo e
+ * a máquina carregada, renders + navegação assíncronos chegaram a demorar mais
+ * (ex.: NewPasswordPage "volta ao login", falhou aos ~1,9 s) — falhas
+ * intermitentes sem bug real. 5 s dá margem sem esconder erros: um elemento
+ * que nunca aparece continua a falhar, só mais tarde.
+ */
+configure({ asyncUtilTimeout: 5_000 });
 
 /**
  * Setup global dos testes.

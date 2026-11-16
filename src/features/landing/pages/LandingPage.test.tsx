@@ -37,6 +37,16 @@ const renderPage = () =>
     </MemoryRouter>,
   );
 
+/**
+ * Primeiro link com o texto indicado. Usa consultas por TEXTO e não por papel
+ * acessível (`getByRole('link', { name })`): na landing page completa o jsdom
+ * calcula o nome acessível de todos os elementos, o que tornava estes testes
+ * lentos (até ~6 s com a suite em paralelo) e fazia o primeiro exceder o
+ * limite de 5 s de forma intermitente.
+ */
+const linkWithText = (text: string) =>
+  screen.getAllByText(text)[0].closest("a") as HTMLAnchorElement;
+
 /** Acções de conta que a navbar mostra sempre com sessão iniciada. */
 const navbarActions = () => ({
   name: screen.getAllByText("Super Admin")[0],
@@ -45,7 +55,14 @@ const navbarActions = () => ({
   panel: screen.getAllByText("Ir para o Painel")[0].closest("a") as HTMLAnchorElement,
 });
 
-describe("LandingPage — navbar", () => {
+/*
+ * Cada teste faz o render da landing page COMPLETA (todas as secções): ~1 s
+ * isolado no primeiro render, 3–4× mais com a suite em paralelo e a máquina
+ * carregada. O limite por omissão (5 s) era excedido de forma intermitente
+ * (2 em 10 execuções da suite). Os testes são determinísticos (sem datas,
+ * timers nem pedidos); o limite reflecte só o custo do render.
+ */
+describe("LandingPage — navbar", { timeout: 15_000 }, () => {
   beforeEach(() => {
     authMocks.isAuthenticated = true;
     authMocks.isLoggingOut = false;
@@ -56,7 +73,7 @@ describe("LandingPage — navbar", () => {
 
     expect(screen.queryByText("Sessão iniciada")).not.toBeInTheDocument();
     expect(screen.queryByText("luischilembomateus@gmail.com")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Ir para o Dashboard" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Ir para o Dashboard")).not.toBeInTheDocument();
   });
 
   it("mostra sempre o nome, o perfil, a saída e o painel na navbar", () => {
@@ -70,7 +87,7 @@ describe("LandingPage — navbar", () => {
 
     // O avatar e os links da navbar mantêm-se intactos.
     expect(screen.getAllByText("SA")[0]).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Início" })[0]).not.toHaveAttribute("aria-hidden");
+    expect(linkWithText("Início")).not.toHaveAttribute("aria-hidden");
   });
 
   it("sem sessão iniciada mostra as acções públicas e nenhuma acção de conta", () => {
@@ -80,6 +97,6 @@ describe("LandingPage — navbar", () => {
     expect(screen.queryByText("Sessão iniciada")).not.toBeInTheDocument();
     expect(screen.queryByTitle("Sair da Conta")).not.toBeInTheDocument();
     expect(screen.queryByText("Ir para o Painel")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Entrar" })[0]).toHaveAttribute("href", "/login");
+    expect(linkWithText("Entrar")).toHaveAttribute("href", "/login");
   });
 });
