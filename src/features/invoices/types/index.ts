@@ -220,9 +220,10 @@ export interface CreateGenericInvoiceMovement {
   quantity: number;
   unit_price: number;
   tax_type?: TaxType;
+  tax_country_region?: string;
   tax_code?: string;
   tax_percentage?: number;
-  tax_exemption_reason?: string;
+  /** Motivo de isenção (M..) do catálogo — obrigatório a 0 %; a descrição gravada vem do catálogo. */
   tax_exemption_code?: string;
 }
 

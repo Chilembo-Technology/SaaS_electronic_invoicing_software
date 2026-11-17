@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { lineTaxFields, validateTaxChoice, type TaxOption } from './catalog';
+import { differsFromProductTax, lineTaxFields, validateTaxChoice, type TaxOption } from './catalog';
 
 const normal: TaxOption = {
   id: 'nor',
@@ -11,7 +11,6 @@ const normal: TaxOption = {
   tax_percentage: 14,
   label: 'IVA — Taxa normal — 14%',
   requires_exemption_reason: false,
-  is_global: true,
   is_default: true,
 };
 
@@ -52,5 +51,25 @@ describe('lineTaxFields', () => {
       tax_percentage: 0,
       tax_exemption_code: 'M10',
     });
+  });
+});
+
+describe('differsFromProductTax', () => {
+  const product = { taxId: 'nor', exemptionCode: null };
+
+  it('não assinala a linha com o imposto do produto', () => {
+    expect(differsFromProductTax({ taxId: 'nor', exemptionCode: '' }, product)).toBe(false);
+  });
+
+  it('assinala outro imposto ou outro motivo de isenção', () => {
+    expect(differsFromProductTax({ taxId: 'ise', exemptionCode: 'M10' }, product)).toBe(true);
+    expect(
+      differsFromProductTax({ taxId: 'ise', exemptionCode: 'M12' }, { taxId: 'ise', exemptionCode: 'M10' }),
+    ).toBe(true);
+  });
+
+  it('não assinala linhas sem produto registado ou produtos sem imposto', () => {
+    expect(differsFromProductTax({ taxId: 'ise', exemptionCode: 'M10' }, null)).toBe(false);
+    expect(differsFromProductTax({ taxId: 'ise', exemptionCode: 'M10' }, { taxId: null, exemptionCode: null })).toBe(false);
   });
 });

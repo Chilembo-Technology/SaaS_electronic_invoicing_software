@@ -3,7 +3,7 @@ import type { VatExemption } from '../vat-exemptions/types';
 
 /**
  * Opção do seletor de imposto (`GET /tax-table-entries/options`): catálogo
- * global + entradas da empresa, activas e não expiradas.
+ * único (igual para todas as empresas), activo e não expirado.
  */
 export interface TaxOption {
   id: string;
@@ -16,7 +16,6 @@ export interface TaxOption {
   label: string;
   /** Taxa 0 %: exige motivo de isenção (vat_exemption_reasons). */
   requires_exemption_reason: boolean;
-  is_global: boolean;
   is_default: boolean;
 }
 
@@ -81,4 +80,18 @@ export function lineTaxFields(option: TaxOption, exemptionCode: string) {
     tax_percentage: option.tax_percentage,
     tax_exemption_code: option.requires_exemption_reason ? exemptionCode || undefined : undefined,
   };
+}
+
+/**
+ * O imposto escolhido na linha é diferente do imposto do produto (outra
+ * entrada do catálogo ou, a 0 %, outro motivo de isenção)? Linha sem produto
+ * registado (ou produto sem imposto): nada a assinalar.
+ */
+export function differsFromProductTax(
+  line: { taxId: string; exemptionCode: string },
+  product: { taxId: string | null | undefined; exemptionCode: string | null | undefined } | null,
+): boolean {
+  if (!product?.taxId || !line.taxId) return false;
+  if (line.taxId !== product.taxId) return true;
+  return (line.exemptionCode || '') !== (product.exemptionCode || '');
 }

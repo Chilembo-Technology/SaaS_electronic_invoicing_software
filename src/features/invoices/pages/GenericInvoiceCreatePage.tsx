@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { ArrowLeft, FileCheck2, Loader2, Plus, Trash2 } from 'lucide-react';
 
@@ -26,12 +26,15 @@ import {
   documentTotals,
   makeAccount,
   makeMovement,
+  movementTaxPatch,
   movementTotals,
   validateGenericInvoiceForm,
   type AccountDraft,
   type MovementDraft,
 } from '../utils/genericInvoice';
 import { todayInAngola } from '@/lib/angolaTime';
+import { TaxSelect } from '../../taxes/components/TaxSelect';
+import { useTaxCatalog } from '../../taxes/hooks/useTaxCatalog';
 
 // Dia de Angola: o backend valida a data contra o dia de Luanda, não o dia UTC.
 function today(): string {
@@ -75,6 +78,26 @@ export function GenericInvoiceCreatePage() {
   const [accounts, setAccounts] = useState<AccountDraft[]>([makeAccount(today())]);
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Imposto dos movimentos: catálogo único (IVA 14 % por omissão); a 0 % o
+  // motivo de isenção do catálogo é obrigatório. Os movimentos criados antes
+  // de o catálogo carregar recebem o por omissão.
+  const taxCatalog = useTaxCatalog();
+  const defaultTax = taxCatalog.options.find((option) => option.is_default) ?? null;
+
+  useEffect(() => {
+    if (!defaultTax) return;
+    setAccounts((current) =>
+      current.some((account) => account.movements.some((movement) => !movement.tax_table_entry_id))
+        ? current.map((account) => ({
+            ...account,
+            movements: account.movements.map((movement) =>
+              movement.tax_table_entry_id ? movement : { ...movement, ...movementTaxPatch(defaultTax) },
+            ),
+          }))
+        : current,
+    );
+  }, [defaultTax]);
+
   const updateAccount = (accountId: string, patch: Partial<AccountDraft>) =>
     setAccounts((current) =>
       current.map((account) => (account.id === accountId ? { ...account, ...patch } : account)),
@@ -98,7 +121,7 @@ export function GenericInvoiceCreatePage() {
     setAccounts((current) =>
       current.map((account) =>
         account.id === accountId
-          ? { ...account, movements: [...account.movements, makeMovement(billingPeriodEnd)] }
+          ? { ...account, movements: [...account.movements, makeMovement(billingPeriodEnd, defaultTax)] }
           : account,
       ),
     );
@@ -119,9 +142,15 @@ export function GenericInvoiceCreatePage() {
     setCustomerTaxId(customer?.customer_tax_id ?? '');
   };
 
-  /** Ao escolher um código de serviço registado, preenche a descrição e o preço. */
+  /**
+   * Ao escolher um código de serviço registado, preenche a descrição, o preço
+   * e o imposto do serviço (do catálogo; pode ser alterado no movimento).
+   */
   const onProductCodeChange = (accountId: string, movementId: string, code: string) => {
     const product = products.find((item) => item.product_code === code);
+    const productTax = product
+      ? taxCatalog.options.find((option) => option.id === product.tax_table_entry_id)
+      : undefined;
     updateMovement(accountId, movementId, {
       product_code: code,
       ...(product
@@ -130,6 +159,7 @@ export function GenericInvoiceCreatePage() {
             unit_price: product.unit_price != null ? String(product.unit_price) : '0',
           }
         : {}),
+      ...(productTax ? movementTaxPatch(productTax, product?.tax_exemption_code ?? '') : {}),
     });
   };
 
@@ -149,7 +179,7 @@ export function GenericInvoiceCreatePage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const validationError = validateGenericInvoiceForm(form);
+    const validationError = validateGenericInvoiceForm(form, taxCatalog.options);
     setLocalError(validationError);
     if (validationError) return;
 
@@ -165,7 +195,7 @@ export function GenericInvoiceCreatePage() {
     setCurrencyCode('AOA');
     setBillingPeriodStart(firstDayOfMonth());
     setBillingPeriodEnd(today());
-    setAccounts([makeAccount(today())]);
+    setAccounts([makeAccount(today(), defaultTax)]);
     setLocalError(null);
   };
 
@@ -205,7 +235,7 @@ export function GenericInvoiceCreatePage() {
     );
   }
 
-  const alertMessage = localError ?? error ?? customersError;
+  const alertMessage = localError ?? error ?? customersError ?? taxCatalog.error;
 
   return (
     <div className="p-6 lg:p-10 space-y-6">
@@ -411,7 +441,6 @@ export function GenericInvoiceCreatePage() {
 
                 {account.movements.map((movement, movementIndex) => {
                   const line = movementTotals(movement);
-                  const isExempt = Number(movement.tax_percentage) === 0;
                   const lineKey = `${errorKey}.lines.${movementIndex}`;
 
                   return (
@@ -509,41 +538,23 @@ export function GenericInvoiceCreatePage() {
                           }
                         />
                       </div>
-                      <div className="space-y-1.5 sm:col-span-1">
-                        <Label htmlFor={`mov-${movement.id}-tax`}>IVA %</Label>
-                        <Input
-                          className="bg-muted border-none"
-                          id={`mov-${movement.id}-tax`}
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="any"
-                          value={movement.tax_percentage}
-                          onChange={(e) =>
-                            updateMovement(account.id, movement.id, { tax_percentage: e.target.value })
-                          }
+                      {/* Imposto do catálogo; a 0 % o motivo de isenção (M..) é obrigatório. */}
+                      <div className="grid gap-3 sm:col-span-9 sm:grid-cols-2">
+                        <TaxSelect
+                          idPrefix={`mov-${movement.id}`}
+                          compact
+                          options={taxCatalog.options}
+                          exemptionReasons={taxCatalog.exemptionReasons}
+                          taxId={movement.tax_table_entry_id}
+                          exemptionCode={movement.tax_exemption_code}
+                          onChange={(taxId, exemptionCode) => {
+                            const option = taxCatalog.options.find((item) => item.id === taxId);
+                            if (option) updateMovement(account.id, movement.id, movementTaxPatch(option, exemptionCode));
+                          }}
+                          taxError={fieldErrors[`${lineKey}.tax_code`] ?? fieldErrors[`${lineKey}.tax_percentage`]}
+                          exemptionError={fieldErrors[`${lineKey}.tax_exemption_code`]}
                         />
                       </div>
-                      {isExempt ? (
-                        <div className="space-y-1.5 sm:col-span-4">
-                          <Label htmlFor={`mov-${movement.id}-exemption`}>
-                            Motivo da não aplicação de imposto *
-                          </Label>
-                          <Input
-                            className="bg-muted border-none"
-                            id={`mov-${movement.id}-exemption`}
-                            maxLength={255}
-                            value={movement.tax_exemption_reason}
-                            onChange={(e) =>
-                              updateMovement(account.id, movement.id, {
-                                tax_exemption_reason: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                      ) : (
-                        <div className="sm:col-span-4" />
-                      )}
                       <div className="flex items-end justify-between gap-2 sm:col-span-4">
                         <span className="text-sm text-muted-foreground">
                           Total: {formatMoney(line.gross, currencyCode)}
@@ -586,7 +597,7 @@ export function GenericInvoiceCreatePage() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => setAccounts((current) => [...current, makeAccount(billingPeriodEnd)])}
+          onClick={() => setAccounts((current) => [...current, makeAccount(billingPeriodEnd, defaultTax)])}
         >
           <Plus className="size-4" aria-hidden="true" />
           Adicionar conta

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
-import { ArrowLeft, FileCheck2, Loader2, PackagePlus, Plus, Trash2, UserPlus } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, FileCheck2, Loader2, PackagePlus, Plus, Trash2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '../../../app/components/ui/button';
@@ -57,7 +57,7 @@ import type {
 import type { Product, ProductType } from '../../products/types';
 import { nowInAngolaForInput, todayInAngola } from '@/lib/angolaTime';
 import { validateRetention } from '../utils/retention';
-import { lineTaxFields, validateTaxChoice, type TaxOption } from '../../taxes/catalog';
+import { differsFromProductTax, lineTaxFields, validateTaxChoice, type TaxOption } from '../../taxes/catalog';
 import { TaxSelect } from '../../taxes/components/TaxSelect';
 import { useTaxCatalog } from '../../taxes/hooks/useTaxCatalog';
 
@@ -1217,10 +1217,28 @@ export function InvoiceCreatePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {lines.map((line, index) => (
+              {lines.map((line, index) => {
+                // Imposto alterado na linha (≠ do produto): fica editável, mas assinalado.
+                const product = products.find((item) => item.product_code === line.product_code);
+                const productTax = product
+                  ? taxCatalog.options.find((option) => option.id === product.tax_table_entry_id)
+                  : undefined;
+                const taxChanged =
+                  !usesLineAmount &&
+                  differsFromProductTax(
+                    { taxId: line.tax_table_entry_id, exemptionCode: line.tax_exemption_code },
+                    product
+                      ? { taxId: product.tax_table_entry_id, exemptionCode: product.tax_exemption_code }
+                      : null,
+                  );
+
+                return (
                 <div
                   key={line.id}
-                  className="grid gap-3 rounded-md border p-4 sm:grid-cols-12"
+                  className={`grid gap-3 rounded-md border p-4 sm:grid-cols-12 ${
+                    taxChanged ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/20' : ''
+                  }`}
+                  data-tax-changed={taxChanged || undefined}
                 >
                   <div className="space-y-1.5 sm:col-span-6">
                     <Label htmlFor={`line-${line.id}-product`}>Produto</Label>
@@ -1312,6 +1330,19 @@ export function InvoiceCreatePage() {
                             }}
                           />
                         </div>
+                        {taxChanged ? (
+                          <p
+                            role="status"
+                            className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400"
+                          >
+                            <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+                            Imposto diferente do definido no produto
+                            {productTax
+                              ? ` (${productTax.label}${product?.tax_exemption_code ? ` · ${product.tax_exemption_code}` : ''})`
+                              : ''}
+                            .
+                          </p>
+                        ) : null}
                       </div>
                     </>
                   )}
@@ -1328,7 +1359,8 @@ export function InvoiceCreatePage() {
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         ) : null}

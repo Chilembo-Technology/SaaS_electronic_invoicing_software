@@ -155,12 +155,21 @@ export const router = createBrowserRouter([
         Component: TaxListPage,
       },
       {
+        // Catálogo único de impostos: só o super-admin cria/altera (o fiscal_core recusa os restantes com 403).
         path: "taxes/create",
-        Component: TaxFormPage,
+        element: (
+          <RequireSuperAdmin>
+            <TaxFormPage />
+          </RequireSuperAdmin>
+        ),
       },
       {
         path: "taxes/:id/edit",
-        Component: TaxFormPage,
+        element: (
+          <RequireSuperAdmin>
+            <TaxFormPage />
+          </RequireSuperAdmin>
+        ),
       },
       {
         path: "products",
