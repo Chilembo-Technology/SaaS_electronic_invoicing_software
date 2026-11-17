@@ -158,8 +158,11 @@ export interface CreateInvoiceLine {
   credit_amount?: number;
   description?: string;
   tax_type?: TaxType;
+  tax_country_region?: string;
   tax_code?: string;
   tax_percentage?: number;
+  /** Motivo de isenção (M..) — obrigatório quando a taxa é 0 %. */
+  tax_exemption_code?: string;
 }
 
 /** Pagamento de uma factura-recibo (FR) — estrutura exigida pelo CreateInvoiceReceiptRequest. */

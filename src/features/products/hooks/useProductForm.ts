@@ -6,6 +6,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { normalizeApiError } from '../../../features/auth/utils/apiError';
 import { getCompanyId } from '../../settings/utils/session';
 import { productService } from '../services/productService';
+import { validateTaxChoice } from '../../taxes/catalog';
+import { useTaxCatalog } from '../../taxes/hooks/useTaxCatalog';
 import type { Product, ProductType } from '../types';
 
 export interface ProductFormValues {
@@ -22,6 +24,10 @@ export interface ProductFormValues {
   unit_of_measure: string;
   unit_price: string;
   expiration_date: string;
+  /** Imposto proposto nas linhas (por omissão IVA à taxa normal, 14 %). */
+  tax_table_entry_id: string;
+  /** Motivo de isenção — obrigatório quando a taxa é 0 %. */
+  tax_exemption_code: string;
   image: File | null;
 }
 
@@ -39,6 +45,8 @@ export const EMPTY_FORM: ProductFormValues = {
   unit_of_measure: 'UN',
   unit_price: '',
   expiration_date: '',
+  tax_table_entry_id: '',
+  tax_exemption_code: '',
   image: null,
 };
 
@@ -111,6 +119,17 @@ export function useProductForm(id?: string) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const taxCatalog = useTaxCatalog();
+
+  // Novo produto: propõe o imposto por omissão (IVA à taxa normal, 14 %).
+  useEffect(() => {
+    if (isEdit || !taxCatalog.defaultId) return;
+    const defaultId = taxCatalog.defaultId;
+    setValues((current) =>
+      current.tax_table_entry_id ? current : { ...current, tax_table_entry_id: defaultId },
+    );
+  }, [isEdit, taxCatalog.defaultId]);
+
   useEffect(() => {
     if (!id) {
       setIsLoadingRecord(false);
@@ -144,6 +163,8 @@ export function useProductForm(id?: string) {
           unit_of_measure: record.unit_of_measure ?? 'UN',
           unit_price: record.unit_price != null ? String(record.unit_price) : '',
           expiration_date: record.expiration_date ?? '',
+          tax_table_entry_id: record.tax_table_entry_id ?? '',
+          tax_exemption_code: record.tax_exemption_code ?? '',
           image: null,
         });
       } catch (err) {
@@ -169,6 +190,16 @@ export function useProductForm(id?: string) {
 
   const submit = useCallback(async (): Promise<Product | null> => {
     const localErrors = validate(values);
+    const selectedTax = taxCatalog.options.find((option) => option.id === values.tax_table_entry_id);
+    if (values.tax_table_entry_id) {
+      const taxErrors = validateTaxChoice(
+        taxCatalog.options,
+        values.tax_table_entry_id,
+        values.tax_exemption_code,
+      );
+      if (taxErrors.tax) localErrors.tax_table_entry_id = taxErrors.tax;
+      if (taxErrors.exemption) localErrors.tax_exemption_code = taxErrors.exemption;
+    }
     setFieldErrors(localErrors);
 
     if (Object.keys(localErrors).length > 0) {
@@ -198,6 +229,10 @@ export function useProductForm(id?: string) {
       unit_of_measure: values.unit_of_measure.trim(),
       unit_price: toNumberOrNull(values.unit_price),
       expiration_date: values.expiration_date.trim() || null,
+      tax_table_entry_id: values.tax_table_entry_id || null,
+      tax_exemption_code: selectedTax?.requires_exemption_reason
+        ? values.tax_exemption_code || null
+        : null,
     };
 
     try {
@@ -231,7 +266,7 @@ export function useProductForm(id?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [companyId, id, isEdit, values]);
+  }, [companyId, id, isEdit, values, taxCatalog.options]);
 
   return {
     isEdit,
@@ -243,6 +278,7 @@ export function useProductForm(id?: string) {
     error,
     fieldErrors,
     loadError,
+    taxCatalog,
   };
 }
 

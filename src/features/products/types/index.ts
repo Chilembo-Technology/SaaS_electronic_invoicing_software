@@ -28,10 +28,27 @@ export interface Product {
   is_on_promotion: boolean;
   unit_of_measure: string;
   unit_price: number | null;
+  /** Imposto proposto nas linhas (catálogo global ou da empresa). */
+  tax_table_entry_id: string | null;
+  /** Motivo de isenção (taxa 0 %). */
+  tax_exemption_code: string | null;
+  tax: ProductTax | null;
+  tax_exemption: { code: string; description: string } | null;
   expiration_date: string | null;
   image_path: string | null;
   created_at: string | null;
   updated_at: string | null;
+}
+
+/** Imposto do produto, tal como devolvido pelo `ProductResource`. */
+export interface ProductTax {
+  id: string;
+  tax_type: 'IVA' | 'IS' | 'NS';
+  tax_country_region: string;
+  tax_code: string;
+  tax_percentage: number;
+  label: string;
+  requires_exemption_reason: boolean;
 }
 
 /** Categoria comercial (global ao SaaS — sem dependência de empresa/header). */
@@ -79,6 +96,10 @@ export interface ProductPayloadBase {
   is_on_promotion: boolean;
   unit_of_measure: string;
   unit_price: number | null;
+  /** Vazio = IVA à taxa normal (14 %) por omissão no backend. */
+  tax_table_entry_id: string | null;
+  /** Obrigatório quando a taxa é 0 %. */
+  tax_exemption_code: string | null;
   expiration_date: string | null;
 }
 

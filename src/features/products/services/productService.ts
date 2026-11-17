@@ -58,6 +58,10 @@ function buildProductFormData(
   }
   if (data.expiration_date) form.append('expiration_date', data.expiration_date);
 
+  // Imposto: vazio = IVA 14 % por omissão no backend; o motivo só a 0 %.
+  if (data.tax_table_entry_id) form.append('tax_table_entry_id', data.tax_table_entry_id);
+  if (data.tax_exemption_code) form.append('tax_exemption_code', data.tax_exemption_code);
+
   form.append('is_stockable', data.is_stockable ? 'true' : 'false');
   form.append('is_inventory_only', data.is_inventory_only ? 'true' : 'false');
   form.append('is_on_promotion', data.is_on_promotion ? 'true' : 'false');

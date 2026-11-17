@@ -57,6 +57,9 @@ import type {
 import type { Product, ProductType } from '../../products/types';
 import { nowInAngolaForInput, todayInAngola } from '@/lib/angolaTime';
 import { validateRetention } from '../utils/retention';
+import { lineTaxFields, validateTaxChoice, type TaxOption } from '../../taxes/catalog';
+import { TaxSelect } from '../../taxes/components/TaxSelect';
+import { useTaxCatalog } from '../../taxes/hooks/useTaxCatalog';
 
 interface LineDraft {
   id: string;
@@ -67,6 +70,10 @@ interface LineDraft {
   tax_percentage: string;
   tax_type: string;
   tax_code: string;
+  /** Opção do catálogo de impostos (o tipo/código/% acima derivam dela). */
+  tax_table_entry_id: string;
+  /** Motivo de isenção (M..) — obrigatório a 0 %. */
+  tax_exemption_code: string;
   credit_amount: string;
 }
 
@@ -80,7 +87,34 @@ function makeLine(): LineDraft {
     tax_percentage: '',
     tax_type: '',
     tax_code: '',
+    tax_table_entry_id: '',
+    tax_exemption_code: '',
     credit_amount: '0',
+  };
+}
+
+/** Imposto da linha no payload: a partir da opção do catálogo escolhida. */
+function lineTaxPayload(options: TaxOption[], line: LineDraft) {
+  const option = options.find((item) => item.id === line.tax_table_entry_id);
+  if (option) {
+    const fields = lineTaxFields(option, line.tax_exemption_code);
+    return { ...fields, tax_type: fields.tax_type as TaxType };
+  }
+  return {
+    tax_type: line.tax_type === '' ? undefined : (line.tax_type as TaxType),
+    tax_code: line.tax_code === '' ? undefined : line.tax_code,
+    tax_percentage: line.tax_percentage === '' ? undefined : toNumber(line.tax_percentage),
+  };
+}
+
+/** Campos de imposto da linha a partir de uma opção do catálogo. */
+function taxPatch(option: TaxOption, exemptionCode: string): Partial<LineDraft> {
+  return {
+    tax_table_entry_id: option.id,
+    tax_type: option.tax_type,
+    tax_code: option.tax_code,
+    tax_percentage: String(option.tax_percentage),
+    tax_exemption_code: option.requires_exemption_reason ? exemptionCode : '',
   };
 }
 
@@ -101,16 +135,26 @@ function formatMoney(value: number): string {
   })} Kz`;
 }
 
-/** Campos de linha preenchidos a partir de um produto (imposto por omissão: IVA 14%). */
-function productLinePatch(product: Product): Partial<LineDraft> {
-  return {
+/**
+ * Campos de linha preenchidos a partir de um produto: o imposto proposto é o
+ * do produto (o utilizador pode alterá-lo na linha). Produto sem imposto
+ * conhecido (catálogo ainda a carregar): IVA 14 %.
+ */
+function productLinePatch(product: Product, options: TaxOption[]): Partial<LineDraft> {
+  const base = {
     product_code: product.product_code,
     product_description: product.product_description,
     unit_price: product.unit_price != null ? String(product.unit_price) : '',
-    tax_type: 'IVA',
-    tax_code: 'NOR',
-    tax_percentage: '14',
   };
+  const option =
+    options.find((item) => item.id === product.tax_table_entry_id) ??
+    options.find((item) => item.is_default);
+
+  if (option) {
+    return { ...base, ...taxPatch(option, product.tax_exemption_code ?? '') };
+  }
+
+  return { ...base, tax_type: 'IVA', tax_code: 'NOR', tax_percentage: '14' };
 }
 
 /** Campo numérico com rótulo, asterisco de obrigatório e erro inline. */
@@ -272,6 +316,19 @@ export function InvoiceCreatePage() {
   const [productSaving, setProductSaving] = useState(false);
   const [productFormError, setProductFormError] = useState<string | null>(null);
 
+  // Catálogo de impostos: as linhas sem imposto escolhido ficam com o por omissão (IVA 14 %).
+  const taxCatalog = useTaxCatalog();
+  const defaultTax = taxCatalog.options.find((option) => option.is_default);
+
+  useEffect(() => {
+    if (!defaultTax) return;
+    setLines((current) =>
+      current.some((line) => !line.tax_table_entry_id)
+        ? current.map((line) => (line.tax_table_entry_id ? line : { ...line, ...taxPatch(defaultTax, '') }))
+        : current,
+    );
+  }, [defaultTax, lines.length]);
+
   const addLine = () => setLines((current) => [...current, makeLine()]);
   const removeLine = (id: string) =>
     setLines((current) => current.filter((line) => line.id !== id));
@@ -294,11 +351,11 @@ export function InvoiceCreatePage() {
   const onSelectProduct = (lineId: string, code: string) => {
     const product = products.find((item) => item.product_code === code);
     if (!product) return;
-    updateLine(lineId, productLinePatch(product));
+    updateLine(lineId, productLinePatch(product, taxCatalog.options));
   };
 
   const applyNewProductToLine = (product: Product) => {
-    const patch = productLinePatch(product);
+    const patch = productLinePatch(product, taxCatalog.options);
     setLines((current) => {
       const emptyIndex = current.findIndex((line) => !line.product_code.trim());
       if (emptyIndex >= 0) {
@@ -548,6 +605,20 @@ export function InvoiceCreatePage() {
         return;
       }
 
+      // Imposto da linha: tem de vir do catálogo; a 0 % exige o motivo de isenção.
+      const taxProblem = usesLineAmount
+        ? undefined
+        : lines
+            .map((line, index) => ({
+              index,
+              ...validateTaxChoice(taxCatalog.options, line.tax_table_entry_id, line.tax_exemption_code),
+            }))
+            .find((result) => result.tax || result.exemption);
+      if (taxProblem) {
+        setLocalError(`Linha ${taxProblem.index + 1}: ${taxProblem.tax ?? taxProblem.exemption}`);
+        return;
+      }
+
       payload.lines = lines.map((line) =>
         usesLineAmount
           ? {
@@ -561,13 +632,7 @@ export function InvoiceCreatePage() {
             product_description: line.product_description.trim(),
             quantity: toNumber(line.quantity),
             unit_price: toNumber(line.unit_price),
-            tax_type:
-              line.tax_type === '' ? undefined : (line.tax_type as TaxType),
-            tax_code: line.tax_code === '' ? undefined : line.tax_code,
-            tax_percentage:
-              line.tax_percentage === ''
-                ? undefined
-                : toNumber(line.tax_percentage),
+            ...lineTaxPayload(taxCatalog.options, line),
           },
       );
 
@@ -1231,20 +1296,22 @@ export function InvoiceCreatePage() {
                           }
                         />
                       </div>
-                      <div className="space-y-1.5 sm:col-span-1">
-                        <Label htmlFor={`line-${line.id}-tax`}>IVA %</Label>
-                        <Input
-                          className="bg-muted border-none"
-                          id={`line-${line.id}-tax`}
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={line.tax_percentage}
-                          onChange={(e) =>
-                            updateLine(line.id, { tax_percentage: e.target.value })
-                          }
-                          placeholder="14"
-                        />
+                      {/* Imposto proposto pelo produto; pode ser alterado na linha. */}
+                      <div className="space-y-3 sm:col-span-12">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <TaxSelect
+                            idPrefix={`line-${line.id}`}
+                            compact
+                            options={taxCatalog.options}
+                            exemptionReasons={taxCatalog.exemptionReasons}
+                            taxId={line.tax_table_entry_id}
+                            exemptionCode={line.tax_exemption_code}
+                            onChange={(taxId, exemptionCode) => {
+                              const option = taxCatalog.options.find((item) => item.id === taxId);
+                              if (option) updateLine(line.id, taxPatch(option, exemptionCode));
+                            }}
+                          />
+                        </div>
                       </div>
                     </>
                   )}
