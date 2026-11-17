@@ -29,6 +29,8 @@ const FIELD_MAP: Record<string, string> = {
   origin_address: 'originAddress',
   destination_city: 'destinationCity',
   destination_address: 'destinationAddress',
+  movement_start_time: 'movementStartTime',
+  at_doc_code_id: 'atDocCodeId',
 };
 
 /**

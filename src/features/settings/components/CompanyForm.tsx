@@ -31,6 +31,7 @@ function toValues(company: CompanySettings): CompanyFormValues {
   return {
     company_name: company.company_name,
     tax_number: company.tax_number,
+    company_registry_number: company.company_registry_number,
     admin_email: company.admin_email,
     phone: company.phone,
     phone_number_alternative: company.phone_number_alternative,
@@ -108,6 +109,7 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
         company_id: company.id,
         company_name: values.company_name,
         tax_number: sanitizeTaxNumber(values.tax_number),
+        company_registry_number: values.company_registry_number,
         admin_email: values.admin_email,
         phone: sanitizeAngolanPhone(values.phone),
         phone_number_alternative: values.phone_number_alternative
@@ -173,6 +175,15 @@ export function CompanyForm({ company, canEdit, onSaved }: CompanyFormProps) {
             error={fieldError('tax_number')}
             disabled={!canEdit}
             required
+          />
+          <FormField
+            id="company_registry_number"
+            label="Nº registo comercial (SAF-T)"
+            value={values.company_registry_number}
+            onChange={(v) => update('company_registry_number', v)}
+            error={fieldError('company_registry_number')}
+            disabled={!canEdit}
+            maxLength={50}
           />
           <FormField
             id="agt_certificate_number"

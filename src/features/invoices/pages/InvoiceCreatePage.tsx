@@ -55,7 +55,7 @@ import type {
   TaxType,
 } from '../types';
 import type { Product, ProductType } from '../../products/types';
-import { todayInAngola } from '@/lib/angolaTime';
+import { nowInAngolaForInput, todayInAngola } from '@/lib/angolaTime';
 import { validateRetention } from '../utils/retention';
 
 interface LineDraft {
@@ -246,6 +246,10 @@ export function InvoiceCreatePage() {
   const [destinationCity, setDestinationCity] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
 
+  // Guias (GT/GR) — SAF-T 4.2: início do transporte (hora de Luanda) e código AGT.
+  const [movementStartTime, setMovementStartTime] = useState(() => nowInAngolaForInput());
+  const [atDocCodeId, setAtDocCodeId] = useState('');
+
   // Criação rápida de cliente
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [customerForm, setCustomerForm] = useState({
@@ -415,6 +419,8 @@ export function InvoiceCreatePage() {
 
   const resetForm = () => {
     reset();
+    setMovementStartTime(nowInAngolaForInput());
+    setAtDocCodeId('');
     setCustomerCode('');
     setCustomerName('');
     setCustomerTaxId('');
@@ -610,6 +616,17 @@ export function InvoiceCreatePage() {
         payload.origin_address = originAddress.trim();
         payload.destination_city = destinationCity.trim();
         payload.destination_address = destinationAddress.trim();
+      }
+
+      if (usesLineAmount) {
+        if (!movementStartTime) {
+          setLocalError('Indique a data e hora de início do transporte.');
+          return;
+        }
+        payload.movement_start_time = movementStartTime;
+        if (atDocCodeId.trim()) {
+          payload.at_doc_code_id = atDocCodeId.trim();
+        }
       }
     }
 
@@ -1036,6 +1053,33 @@ export function InvoiceCreatePage() {
                 placeholder="Juros de mora"
                 maxLength={50}
                 error={fieldErrors.rectificationReason}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {usesLineAmount ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Transporte</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                id="movement_start_time"
+                label="Início do transporte (hora de Luanda)"
+                type="datetime-local"
+                required
+                value={movementStartTime}
+                onChange={setMovementStartTime}
+                error={fieldErrors.movementStartTime}
+              />
+              <FormField
+                id="at_doc_code_id"
+                label="Código AGT da guia (opcional)"
+                value={atDocCodeId}
+                onChange={setAtDocCodeId}
+                maxLength={200}
+                error={fieldErrors.atDocCodeId}
               />
             </CardContent>
           </Card>

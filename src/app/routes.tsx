@@ -43,6 +43,9 @@ import { ProductFormPage } from "../features/products/pages/ProductFormPage";
 import { CustomerListPage } from "../features/customers/pages/CustomerListPage";
 import { CustomerFormPage } from "../features/customers/pages/CustomerFormPage";
 
+// Exportação do ficheiro SAF-T (fiscal_core) — só administradores.
+import { SaftExportPage } from "../features/saft/pages/SaftExportPage";
+
 // Páginas públicas (utilizadores NÃO autenticados)
 import { LandingPage } from "../features/landing/pages/LandingPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
@@ -182,6 +185,14 @@ export const router = createBrowserRouter([
       {
         path: "customers/:id/edit",
         Component: CustomerFormPage,
+      },
+      {
+        path: "saft/exports",
+        element: (
+          <RequireAdmin>
+            <SaftExportPage />
+          </RequireAdmin>
+        ),
       },
       {
         path: "relatorios",

@@ -16,3 +16,22 @@ export function todayInAngola(now: Date = new Date()): string {
     day: '2-digit',
   }).format(now);
 }
+
+/**
+ * Data e hora actuais em Angola no formato de um `<input type="datetime-local">`
+ * (YYYY-MM-DDTHH:mm). O backend lê a hora sem fuso como hora de Angola.
+ */
+export function nowInAngolaForInput(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ANGOLA_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '00';
+
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+}

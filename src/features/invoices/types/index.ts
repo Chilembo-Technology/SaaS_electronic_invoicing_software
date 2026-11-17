@@ -201,6 +201,10 @@ export interface CreateInvoicePayload {
   origin_address?: string;
   destination_city?: string;
   destination_address?: string;
+  /** Guias (GT/GR): início do transporte em hora de Luanda (YYYY-MM-DDTHH:mm). */
+  movement_start_time?: string;
+  /** Guias (GT/GR): código atribuído pela AGT (opcional). */
+  at_doc_code_id?: string;
 }
 
 /** Movimento (linha) de uma conta na Factura Genérica. */

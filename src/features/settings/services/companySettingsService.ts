@@ -26,6 +26,7 @@ interface RawCompany {
   id?: string | number;
   company_name?: string;
   tax_number?: string;
+  company_registry_number?: string | null;
   admin_email?: string;
   phone?: string;
   phone_number_alternative?: string;
@@ -65,6 +66,7 @@ export function mapCompany(raw: RawCompany | null | undefined): CompanySettings 
     id: company.id != null ? String(company.id) : '',
     company_name: company.company_name ?? '',
     tax_number: company.tax_number ?? '',
+    company_registry_number: company.company_registry_number ?? '',
     admin_email: company.admin_email ?? '',
     phone: company.phone ?? '',
     phone_number_alternative: company.phone_number_alternative ?? '',

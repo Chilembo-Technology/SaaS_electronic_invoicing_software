@@ -16,10 +16,11 @@ import {
   Menu,
   X,
   Trash2,
+  FileCode2,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { isSuperAdmin } from "../../features/settings/utils/session";
+import { isAdmin, isSuperAdmin } from "../../features/settings/utils/session";
 
 const navigation = [
   // Link para a página inicial pública — visível também com sessão iniciada.
@@ -31,6 +32,8 @@ const navigation = [
   { name: "Motivos de Isenção", href: "/vat-exemptions", icon: Tag },
   { name: "Impostos", href: "/taxes", icon: Percent },
   { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
+  // Só administradores (o fiscal_core recusa os restantes com 403).
+  { name: "Exportar SAF-T", href: "/saft/exports", icon: FileCode2, adminOnly: true },
   { name: "Configurações", href: "/configuracoes", icon: Settings },
   { name: "Lixeira", href: "/lixeira", icon: Trash2 },
 ];
@@ -47,6 +50,7 @@ export function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Secção "Administração" (gestão da plataforma): só para o super-admin.
   const showAdminNavigation = isSuperAdmin(user);
+  const visibleNavigation = navigation.filter((item) => !("adminOnly" in item) || isAdmin(user));
 
   const isActive = (href: string) => {
     // `startsWith("/")` daria sempre verdadeiro em "/" — comparação exacta.
@@ -97,7 +101,7 @@ export function Layout() {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1">
-            {navigation.map((item) => {
+            {visibleNavigation.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
 
@@ -195,7 +199,7 @@ export function Layout() {
         {mobileMenuOpen && (
           <div className="absolute top-16 left-0 right-0 bg-sidebar border-b border-sidebar-border shadow-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
             <nav className="px-4 py-4 space-y-1">
-              {navigation.map((item) => {
+              {visibleNavigation.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
 
