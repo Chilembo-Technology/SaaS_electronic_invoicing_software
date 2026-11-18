@@ -194,21 +194,18 @@ export interface CreateInvoicePayload {
   operation_type?: CreditNoteOperationType;
   rectification_reason?: string;
   source_document?: string;
-  /** Recibo (RG). */
+  /** Recibo (RG): base, imposto e total são calculados pelo fiscal_core a partir da factura liquidada. */
   invoice_reference?: string;
-  tax_total?: number;
-  invoice_total?: number;
   retention_amount?: number;
   /** Tipo de retenção/cativação (SAF-T WithholdingTaxType) — obrigatório se retention_amount > 0. */
   retention_type?: RetentionType;
   /** WithholdingTaxDescription (máx. 60) — obrigatória no IS (código da verba). */
   retention_description?: string;
   amount_paid?: number;
-  amount_due?: number;
   payment_mechanism?: string;
-  /** Factura-recibo (FR) — pagamentos obrigatórios. */
+  /** FR e AR — pagamentos obrigatórios; a soma tem de ser o total do documento. */
   payments?: PaymentDraft[];
-  /** Guia de transporte (GT). */
+  /** Guias: origem só na GT; destino (ShipTo) obrigatório na GT e na GR. */
   origin_city?: string;
   origin_address?: string;
   destination_city?: string;

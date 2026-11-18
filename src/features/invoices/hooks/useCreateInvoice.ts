@@ -17,13 +17,10 @@ const FIELD_MAP: Record<string, string> = {
   rectification_reason: 'rectificationReason',
   source_document: 'sourceDocument',
   invoice_reference: 'invoiceReference',
-  tax_total: 'taxTotal',
-  invoice_total: 'invoiceTotal',
   retention_amount: 'retentionAmount',
   retention_type: 'retentionType',
   retention_description: 'retentionDescription',
   amount_paid: 'amountPaid',
-  amount_due: 'amountDue',
   payment_mechanism: 'paymentMechanism',
   origin_city: 'originCity',
   origin_address: 'originAddress',
@@ -61,9 +58,9 @@ export function useCreateInvoice() {
     setCreatedInvoice(null);
 
     try {
-      // A factura-recibo (FR) exige pelo menos um pagamento (CreateInvoiceReceiptRequest).
+      // FR e AR exigem pelo menos um pagamento (= total do documento).
       const body: CreateInvoicePayload =
-        type === 'FR' ? { ...payload, payments: payload.payments ?? [] } : payload;
+        type === 'FR' || type === 'AR' ? { ...payload, payments: payload.payments ?? [] } : payload;
       const invoice = await invoiceService.createInvoice(companyId, body, type);
       setCreatedInvoice(invoice);
       return invoice;

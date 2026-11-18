@@ -40,6 +40,7 @@ import {
   CREATE_INVOICE_TYPE_OPTIONS,
   CREATE_PAGE_TITLES,
   NC_OPERATION_TYPES,
+  PAYMENT_MECHANISM_CODES,
   PAYMENT_MECHANISM_OPTIONS,
   RETENTION_DESCRIPTION_MAX_LENGTH,
   RETENTION_TYPES,
@@ -58,6 +59,7 @@ import type { Product, ProductType } from '../../products/types';
 import { nowInAngolaForInput, todayInAngola } from '@/lib/angolaTime';
 import { validateRetention } from '../utils/retention';
 import { rejectsZeroValue, validateDocumentValue } from '../utils/documentValue';
+import { computeDocumentTotals, validatePaymentsTotal } from '../utils/documentTotals';
 import { useBackdatedDateConfirmation } from '../hooks/useBackdatedDateConfirmation';
 import { BackdatedDateDialog } from '../components/BackdatedDateDialog';
 import { differsFromProductTax, lineTaxFields, validateTaxChoice, type TaxOption } from '../../taxes/catalog';
@@ -258,7 +260,8 @@ export function InvoiceCreatePage() {
   const companyId = getCompanyId(user);
 
   const isReceipt = type === 'RG';
-  const isInvoiceReceipt = type === 'FR';
+  // Pagos no acto (FR e AR): pagamento obrigatório e igual ao total do documento.
+  const isInvoiceReceipt = type === 'FR' || type === 'AR';
   const isCreditNote = type === 'NC';
   const isDebitNote = type === 'ND';
   const isTransportGuide = type === 'GT';
@@ -280,13 +283,10 @@ export function InvoiceCreatePage() {
 
   // Recibo (RG)
   const [invoiceReference, setInvoiceReference] = useState('');
-  const [taxTotal, setTaxTotal] = useState('');
-  const [invoiceTotal, setInvoiceTotal] = useState('');
   const [retentionAmount, setRetentionAmount] = useState('');
   const [retentionType, setRetentionType] = useState<RetentionType | ''>('');
   const [retentionDescription, setRetentionDescription] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
-  const [amountDue, setAmountDue] = useState('');
   const [paymentMechanism, setPaymentMechanism] = useState('');
 
   // Factura-recibo (FR) — pagamento obrigatório
@@ -498,11 +498,8 @@ export function InvoiceCreatePage() {
     setRectificationReason('');
     setSourceDocument('');
     setInvoiceReference('');
-    setTaxTotal('');
-    setInvoiceTotal('');
     setRetentionAmount('');
     setAmountPaid('');
-    setAmountDue('');
     setPaymentMechanism('');
     setPayments([{ payment_mechanism: '', payment_amount: 0, payment_date: today() }]);
     setOriginCity('');
@@ -511,33 +508,23 @@ export function InvoiceCreatePage() {
     setDestinationAddress('');
   };
 
-  const subtotal = lines.reduce(
-    (sum, line) => sum + toNumber(line.quantity) * toNumber(line.unit_price),
-    0,
-  );
-  const tax = lines.reduce((sum, line) => {
-    const base = toNumber(line.quantity) * toNumber(line.unit_price);
-    const pct = line.tax_percentage === '' ? 0 : toNumber(line.tax_percentage);
-    return sum + (base * pct) / 100;
-  }, 0);
-  const total = subtotal + tax;
+  // Mesmo arredondamento do fiscal_core: o total mostrado é o GrossTotal gravado.
+  const { net: subtotal, tax, gross: total } = computeDocumentTotals(lines);
   const linesTotal = lines.reduce(
     (sum, line) => sum + toNumber(line.credit_amount),
     0,
   );
 
-  // Pré-preenche o valor do pagamento (FR) com o total calculado do documento.
+  // FR/AR (pagos no acto): o pagamento é sempre o total do documento.
   useEffect(() => {
-    if (type === 'FR') {
+    if (isInvoiceReceipt) {
       setPayments((current) =>
         current.map((payment, index) =>
-          index === 0 && payment.payment_amount === 0
-            ? { ...payment, payment_amount: total }
-            : payment,
+          index === 0 ? { ...payment, payment_amount: total } : payment,
         ),
       );
     }
-  }, [type, total]);
+  }, [isInvoiceReceipt, total]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -560,26 +547,18 @@ export function InvoiceCreatePage() {
         setLocalError('A referência da factura é obrigatória.');
         return;
       }
-      if (taxTotal.trim() === '' || toNumber(taxTotal) < 0) {
-        setLocalError('O total de imposto é obrigatório.');
-        return;
-      }
-      if (invoiceTotal.trim() === '' || toNumber(invoiceTotal) < 0) {
-        setLocalError('O total da factura é obrigatório.');
-        return;
-      }
       if (amountPaid.trim() === '' || toNumber(amountPaid) < 0) {
         setLocalError('O valor pago é obrigatório.');
         return;
       }
-      if (amountDue.trim() === '' || toNumber(amountDue) < 0) {
-        setLocalError('O valor em dívida é obrigatório.');
+      if (!PAYMENT_MECHANISM_CODES.includes(paymentMechanism)) {
+        setLocalError('Selecione o mecanismo de pagamento.');
         return;
       }
 
+      // Base, imposto e total do recibo são calculados pelo fiscal_core a partir
+      // da factura liquidada (proporcionais ao valor pago + retido).
       payload.invoice_reference = invoiceReference.trim();
-      payload.tax_total = toNumber(taxTotal);
-      payload.invoice_total = toNumber(invoiceTotal);
       payload.retention_amount =
         retentionAmount.trim() === '' ? undefined : toNumber(retentionAmount);
       const retentionError = validateRetention({
@@ -596,8 +575,7 @@ export function InvoiceCreatePage() {
         payload.retention_description = retentionDescription.trim() || undefined;
       }
       payload.amount_paid = toNumber(amountPaid);
-      payload.amount_due = toNumber(amountDue);
-      payload.payment_mechanism = paymentMechanism.trim() || undefined;
+      payload.payment_mechanism = paymentMechanism;
     } else {
       const invalidLine = lines.find(
         (line) =>
@@ -700,6 +678,16 @@ export function InvoiceCreatePage() {
         payload.destination_address = destinationAddress.trim();
       }
 
+      // GR: o local de descarga (SAF-T ShipTo) é obrigatório.
+      if (isDeliveryNote) {
+        if (!destinationCity.trim() || !destinationAddress.trim()) {
+          setLocalError('Preencha a morada e a cidade de destino (local de descarga).');
+          return;
+        }
+        payload.destination_city = destinationCity.trim();
+        payload.destination_address = destinationAddress.trim();
+      }
+
       if (usesLineAmount) {
         if (!movementStartTime) {
           setLocalError('Indique a data e hora de início do transporte.');
@@ -724,6 +712,11 @@ export function InvoiceCreatePage() {
       }
       if (!(payment.payment_amount > 0)) {
         setLocalError('O valor do pagamento tem de ser superior a zero.');
+        return;
+      }
+      const paymentsError = validatePaymentsTotal([payment], total);
+      if (paymentsError) {
+        setLocalError(paymentsError);
         return;
       }
       payload.payments = [
@@ -920,17 +913,13 @@ export function InvoiceCreatePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="payment_amount">Valor pago</Label>
+                <Label htmlFor="payment_amount">Valor pago (= total do documento)</Label>
                 <Input
                   className="bg-muted border-none"
                   id="payment_amount"
                   type="number"
-                  min="0"
-                  step="any"
+                  readOnly
                   value={payments[0]?.payment_amount ?? 0}
-                  onChange={(e) =>
-                    updatePayment(0, { payment_amount: toNumber(e.target.value) })
-                  }
                 />
               </div>
             </CardContent>
@@ -952,31 +941,38 @@ export function InvoiceCreatePage() {
                 placeholder="FT 2026/123"
                 error={fieldErrors.invoiceReference}
               />
-              <FormField
-                id="payment_mechanism"
-                label="Mecanismo de pagamento (opcional)"
-                value={paymentMechanism}
-                onChange={setPaymentMechanism}
-                placeholder="Numerário"
-                maxLength={10}
-                error={fieldErrors.paymentMechanism}
-              />
-              <NumberField
-                id="tax_total"
-                label="Total de imposto"
-                required
-                value={taxTotal}
-                onChange={setTaxTotal}
-                error={fieldErrors.taxTotal}
-              />
-              <NumberField
-                id="invoice_total"
-                label="Total da factura"
-                required
-                value={invoiceTotal}
-                onChange={setInvoiceTotal}
-                error={fieldErrors.invoiceTotal}
-              />
+              <div className="space-y-1.5">
+                <Label htmlFor="payment_mechanism">
+                  Mecanismo de pagamento
+                  <span className="text-destructive" aria-hidden="true">
+                    *
+                  </span>
+                </Label>
+                {/* O valor é o código SAF-T (NU, TB, …), nunca o índice da opção. */}
+                <Select value={paymentMechanism} onValueChange={setPaymentMechanism}>
+                  <SelectTrigger
+                    id="payment_mechanism"
+                    className="bg-muted border-none"
+                    aria-invalid={Boolean(fieldErrors.paymentMechanism)}
+                  >
+                    <SelectValue placeholder="Selecione o mecanismo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_MECHANISM_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fieldErrors.paymentMechanism ? (
+                  <FieldError message={fieldErrors.paymentMechanism} />
+                ) : null}
+              </div>
+              <p className="text-sm text-muted-foreground sm:col-span-2">
+                A base, o imposto e o total do recibo são calculados a partir da factura
+                liquidada, em proporção do valor pago (mais a retenção, se houver).
+              </p>
               <NumberField
                 id="retention_amount"
                 label="Retenção na fonte (opcional)"
@@ -1039,14 +1035,6 @@ export function InvoiceCreatePage() {
                 value={amountPaid}
                 onChange={setAmountPaid}
                 error={fieldErrors.amountPaid}
-              />
-              <NumberField
-                id="amount_due"
-                label="Valor em dívida"
-                required
-                value={amountDue}
-                onChange={setAmountDue}
-                error={fieldErrors.amountDue}
               />
             </CardContent>
           </Card>
@@ -1169,30 +1157,36 @@ export function InvoiceCreatePage() {
           </Card>
         ) : null}
 
-        {isTransportGuide ? (
+        {usesLineAmount ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Origem e destino</CardTitle>
+              <CardTitle className="text-base">
+                {isTransportGuide ? 'Origem e destino' : 'Destino (local de descarga)'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                id="origin_address"
-                label="Morada de origem"
-                required
-                value={originAddress}
-                onChange={setOriginAddress}
-                placeholder="Rua, nº"
-                error={fieldErrors.originAddress}
-              />
-              <FormField
-                id="origin_city"
-                label="Cidade de origem"
-                required
-                value={originCity}
-                onChange={setOriginCity}
-                placeholder="Luanda"
-                error={fieldErrors.originCity}
-              />
+              {isTransportGuide ? (
+                <>
+                  <FormField
+                    id="origin_address"
+                    label="Morada de origem"
+                    required
+                    value={originAddress}
+                    onChange={setOriginAddress}
+                    placeholder="Rua, nº"
+                    error={fieldErrors.originAddress}
+                  />
+                  <FormField
+                    id="origin_city"
+                    label="Cidade de origem"
+                    required
+                    value={originCity}
+                    onChange={setOriginCity}
+                    placeholder="Luanda"
+                    error={fieldErrors.originCity}
+                  />
+                </>
+              ) : null}
               <FormField
                 id="destination_address"
                 label="Morada de destino"
