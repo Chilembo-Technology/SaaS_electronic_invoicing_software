@@ -24,9 +24,11 @@ function figmaAssetResolver() {
  * Portas publicadas no host pelos `docker-compose.yml` de cada serviço:
  *   - auth_service         -> http://localhost:8000
  *   - organization_service -> http://localhost:8002
+ *   - subscription_service -> http://localhost:8005
  */
 const DEV_AUTH_TARGET = 'http://localhost:8000'
 const DEV_ORGANIZATION_TARGET = 'http://localhost:8002'
+const DEV_SUBSCRIPTION_TARGET = 'http://localhost:8005'
 
 /** Gateway nginx do `docker-compose.yml` da raiz deste projecto. */
 const DEV_GATEWAY_TARGET = 'http://localhost:80'
@@ -41,7 +43,7 @@ function proxyTo(target: string): ProxyOptions {
       proxy.on('error', (error) => {
         console.error(`[dev-proxy] Falha ao contactar ${target}: ${error.message}`)
         console.error(
-          '[dev-proxy] Confirme que os serviços estão a correr (docker compose up -d) ou ajuste VITE_DEV_PROXY_TARGET / VITE_DEV_AUTH_TARGET / VITE_DEV_ORGANIZATION_TARGET no .env.',
+          '[dev-proxy] Confirme que os serviços estão a correr (docker compose up -d) ou ajuste VITE_DEV_PROXY_TARGET / VITE_DEV_AUTH_TARGET / VITE_DEV_ORGANIZATION_TARGET / VITE_DEV_SUBSCRIPTION_TARGET no .env.',
         )
       })
     },
@@ -51,12 +53,14 @@ function proxyTo(target: string): ProxyOptions {
 export default defineConfig(({ mode }) => {
   // Lê o `.env` do projecto (e não apenas as variáveis exportadas no shell) — é o
   // que faz VITE_DEV_PROXY_TARGET / VITE_DEV_AUTH_TARGET /
-  // VITE_DEV_ORGANIZATION_TARGET definidas em `.env` funcionarem de facto.
+  // VITE_DEV_ORGANIZATION_TARGET / VITE_DEV_SUBSCRIPTION_TARGET definidas em
+  // `.env` funcionarem de facto.
   const env = loadEnv(mode, __dirname, '')
 
   const gatewayTarget = env.VITE_DEV_PROXY_TARGET?.trim()
   const authTarget = env.VITE_DEV_AUTH_TARGET?.trim() || DEV_AUTH_TARGET
   const organizationTarget = env.VITE_DEV_ORGANIZATION_TARGET?.trim() || DEV_ORGANIZATION_TARGET
+  const subscriptionTarget = env.VITE_DEV_SUBSCRIPTION_TARGET?.trim() || DEV_SUBSCRIPTION_TARGET
 
   return {
     plugins: [
@@ -93,6 +97,9 @@ export default defineConfig(({ mode }) => {
             '/api/v1/onboarding': proxyTo(authTarget),
             '/api/v1/company': proxyTo(organizationTarget),
             '/api/v1/organizations': proxyTo(organizationTarget),
+            // Planos e subscrições (subscription_service).
+            '/api/v1/plans': proxyTo(subscriptionTarget),
+            '/api/v1/subscriptions': proxyTo(subscriptionTarget),
             // Serviços ainda sem porta publicada no host (customer, product,
             // supplier e tax) só estão acessíveis através do gateway nginx.
             '/api': proxyTo(DEV_GATEWAY_TARGET),

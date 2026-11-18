@@ -12,6 +12,7 @@ services:
     environment:
       - VITE_DEV_AUTH_TARGET=http://chilembo-saas-faturacao-auth-dev:8000
       - VITE_DEV_ORGANIZATION_TARGET=http://chilembo-saas-faturacao-organization-dev:8000
+      - VITE_DEV_SUBSCRIPTION_TARGET=http://chilembo-saas-faturacao-subscription-dev:8000
       - VITE_CORE_DATA_API_URL=http://host.docker.internal:8003/api
     extra_hosts:
       - "host.docker.internal:host-gateway"
