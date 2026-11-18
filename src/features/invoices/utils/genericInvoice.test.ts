@@ -6,10 +6,37 @@ import {
   documentTotals,
   makeAccount,
   makeMovement,
+  movementTaxPatch,
   validateGenericInvoiceForm,
   type AccountDraft,
   type GenericInvoiceForm,
 } from './genericInvoice';
+import type { TaxOption } from '../../taxes/catalog';
+
+const NOR: TaxOption = {
+  id: 'nor',
+  tax_type: 'IVA',
+  tax_country_region: 'AO',
+  tax_code: 'NOR',
+  description: 'IVA — Taxa normal',
+  tax_percentage: 14,
+  label: 'IVA — Taxa normal — 14%',
+  requires_exemption_reason: false,
+  is_default: true,
+};
+
+const ISE: TaxOption = {
+  ...NOR,
+  id: 'ise',
+  tax_code: 'ISE',
+  description: 'IVA — Isento',
+  tax_percentage: 0,
+  label: 'IVA — Isento — 0%',
+  requires_exemption_reason: true,
+  is_default: false,
+};
+
+const CATALOG = [NOR, ISE];
 
 /** Exemplar: 1 movimento, 4 500,00 x 1, IVA 14% = 630,00 → 5 130,00 AOA. */
 function exemplarAccount(): AccountDraft {
@@ -20,7 +47,7 @@ function exemplarAccount(): AccountDraft {
     service_location_name: '537 - DEPENDENCIA AVENCA',
     movements: [
       {
-        ...makeMovement('2026-08-31'),
+        ...makeMovement('2026-08-31', NOR),
         movement_time: '23:59',
         product_code: 'COM_GEST',
         product_description: 'Comissão_gest_MN_Emp Ago',
@@ -59,7 +86,7 @@ describe('Factura Genérica — totais', () => {
       ...exemplarAccount(),
       movements: [
         { ...makeMovement('2026-08-31'), unit_price: '250', tax_percentage: '14' },
-        { ...makeMovement('2026-08-31'), unit_price: '100', tax_percentage: '0' },
+        { ...makeMovement('2026-08-31', ISE), unit_price: '100', tax_exemption_code: 'M12' },
       ],
     };
 
@@ -101,19 +128,26 @@ describe('Factura Genérica — payload', () => {
     });
   });
 
-  it('marca os movimentos sem IVA como isentos com o motivo', () => {
+  it('envia o imposto do catálogo e, a 0 %, só o código do motivo (a descrição vem do catálogo)', () => {
     const account = exemplarAccount();
-    account.movements[0] = { ...account.movements[0], tax_percentage: '0', tax_exemption_reason: 'Art. 12.º CIVA' };
+    account.movements[0] = { ...account.movements[0], ...movementTaxPatch(ISE, 'M12') };
 
     const line = buildGenericInvoicePayload(form([account])).accounts[0].lines[0];
 
-    expect(line).toMatchObject({ tax_code: 'ISE', tax_percentage: 0, tax_exemption_reason: 'Art. 12.º CIVA' });
+    expect(line).toMatchObject({
+      tax_type: 'IVA',
+      tax_country_region: 'AO',
+      tax_code: 'ISE',
+      tax_percentage: 0,
+      tax_exemption_code: 'M12',
+    });
+    expect(line).not.toHaveProperty('tax_exemption_reason');
   });
 });
 
 describe('Factura Genérica — validação', () => {
   it('aceita o exemplar', () => {
-    expect(validateGenericInvoiceForm(form([exemplarAccount()]))).toBeNull();
+    expect(validateGenericInvoiceForm(form([exemplarAccount()]), CATALOG)).toBeNull();
   });
 
   it('exige o período de facturação coerente', () => {
@@ -131,10 +165,55 @@ describe('Factura Genérica — validação', () => {
     ).toMatch(/local da prestação/);
   });
 
-  it('exige o motivo nos movimentos isentos', () => {
+  it('exige o motivo de isenção do catálogo nos movimentos a 0 %', () => {
     const account = exemplarAccount();
-    account.movements[0] = { ...account.movements[0], tax_percentage: '0' };
+    account.movements[0] = { ...account.movements[0], ...movementTaxPatch(ISE) };
 
-    expect(validateGenericInvoiceForm(form([account]))).toMatch(/motivo da não aplicação/);
+    expect(validateGenericInvoiceForm(form([account]), CATALOG)).toMatch(/motivo de isenção/);
+
+    account.movements[0] = { ...account.movements[0], tax_exemption_code: 'M12' };
+    expect(validateGenericInvoiceForm(form([account]), CATALOG)).toBeNull();
+  });
+
+  it('recusa movimentos a preço 0 e um total que arredonda a zero', () => {
+    const zeroPrice = exemplarAccount();
+    zeroPrice.movements[0] = { ...zeroPrice.movements[0], unit_price: '0' };
+    expect(validateGenericInvoiceForm(form([zeroPrice]), CATALOG)).toMatch(/superior a zero/);
+
+    const roundsToZero = exemplarAccount();
+    roundsToZero.movements[0] = { ...roundsToZero.movements[0], quantity: '0.001', unit_price: '1' };
+    expect(validateGenericInvoiceForm(form([roundsToZero]), CATALOG)).toBe(
+      'O total do documento não pode ser zero.',
+    );
+  });
+
+  it('exige um imposto do catálogo em cada movimento', () => {
+    const account = exemplarAccount();
+    account.movements[0] = { ...account.movements[0], tax_table_entry_id: '' };
+
+    expect(validateGenericInvoiceForm(form([account]), CATALOG)).toMatch(/escolha o imposto/);
+  });
+});
+
+describe('Factura Genérica — moeda estrangeira', () => {
+  it('em AOA não pede câmbio nem o envia', () => {
+    const payload = buildGenericInvoicePayload(form([exemplarAccount()]));
+
+    expect(validateGenericInvoiceForm(form([exemplarAccount()]))).toBeNull();
+    expect(payload.exchange_rate).toBeUndefined();
+  });
+
+  it('noutra moeda exige o câmbio para AOA', () => {
+    const usd = { ...form([exemplarAccount()]), currencyCode: 'USD' };
+
+    expect(validateGenericInvoiceForm(usd)).toMatch(/taxa de câmbio/);
+    expect(validateGenericInvoiceForm({ ...usd, exchangeRate: '0' })).toMatch(/taxa de câmbio/);
+  });
+
+  it('noutra moeda envia o câmbio indicado', () => {
+    const usd = { ...form([exemplarAccount()]), currencyCode: 'USD', exchangeRate: '925.5' };
+
+    expect(validateGenericInvoiceForm(usd)).toBeNull();
+    expect(buildGenericInvoicePayload(usd).exchange_rate).toBe(925.5);
   });
 });

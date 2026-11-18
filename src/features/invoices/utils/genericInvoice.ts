@@ -3,7 +3,9 @@
  * totais (por conta e do documento) e construção do payload do fiscal_core.
  */
 
-import type { CreateGenericInvoicePayload } from '../types';
+import { validateTaxChoice, type TaxOption } from '../../taxes/catalog';
+import { validateDocumentValue } from './documentValue';
+import type { CreateGenericInvoicePayload, TaxType } from '../types';
 
 export interface MovementDraft {
   id: string;
@@ -14,8 +16,14 @@ export interface MovementDraft {
   movement_reference: string;
   quantity: string;
   unit_price: string;
+  /** Opção do catálogo de impostos (tipo/região/código/% derivam dela). */
+  tax_table_entry_id: string;
+  tax_type: string;
+  tax_country_region: string;
+  tax_code: string;
   tax_percentage: string;
-  tax_exemption_reason: string;
+  /** Motivo de isenção (M..) do catálogo — obrigatório a 0 %. */
+  tax_exemption_code: string;
 }
 
 export interface AccountDraft {
@@ -32,6 +40,8 @@ export interface GenericInvoiceForm {
   customerTaxId: string;
   invoiceDate: string;
   currencyCode: string;
+  /** Câmbio para AOA (texto do campo); obrigatório quando a moeda não é AOA. */
+  exchangeRate?: string;
   billingPeriodStart: string;
   billingPeriodEnd: string;
   accounts: AccountDraft[];
@@ -52,8 +62,28 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-export function makeMovement(date: string): MovementDraft {
+/**
+ * Campos de imposto de um movimento a partir de uma opção do catálogo (o
+ * motivo só fica quando a taxa é 0 %).
+ */
+export function movementTaxPatch(option: TaxOption, exemptionCode = ''): Partial<MovementDraft> {
   return {
+    tax_table_entry_id: option.id,
+    tax_type: option.tax_type,
+    tax_country_region: option.tax_country_region,
+    tax_code: option.tax_code,
+    tax_percentage: String(option.tax_percentage),
+    tax_exemption_code: option.requires_exemption_reason ? exemptionCode : '',
+  };
+}
+
+/**
+ * Movimento novo com o imposto por omissão do catálogo (IVA 14 %). Sem
+ * catálogo carregado fica IVA AO NOR 14 % sem opção escolhida (a validação
+ * obriga a escolher do catálogo antes de emitir).
+ */
+export function makeMovement(date: string, defaultTax?: TaxOption | null): MovementDraft {
+  const movement: MovementDraft = {
     id: crypto.randomUUID(),
     movement_date: date,
     movement_time: '00:00:00',
@@ -62,18 +92,24 @@ export function makeMovement(date: string): MovementDraft {
     movement_reference: '',
     quantity: '1',
     unit_price: '0',
+    tax_table_entry_id: '',
+    tax_type: 'IVA',
+    tax_country_region: 'AO',
+    tax_code: 'NOR',
     tax_percentage: '14',
-    tax_exemption_reason: '',
+    tax_exemption_code: '',
   };
+
+  return defaultTax ? { ...movement, ...movementTaxPatch(defaultTax) } : movement;
 }
 
-export function makeAccount(date: string): AccountDraft {
+export function makeAccount(date: string, defaultTax?: TaxOption | null): AccountDraft {
   return {
     id: crypto.randomUUID(),
     account_number: '',
     service_location_code: '',
     service_location_name: '',
-    movements: [makeMovement(date)],
+    movements: [makeMovement(date, defaultTax)],
   };
 }
 
@@ -103,10 +139,20 @@ export function documentTotals(accounts: AccountDraft[]): Totals {
   return sumTotals(accounts.map(accountTotals));
 }
 
-/** Valida o formulário; devolve a primeira mensagem de erro ou `null`. */
-export function validateGenericInvoiceForm(form: GenericInvoiceForm): string | null {
+/**
+ * Valida o formulário; devolve a primeira mensagem de erro ou `null`. Com o
+ * catálogo (`taxOptions`), o imposto de cada movimento tem de ser uma opção
+ * do catálogo; a 0 % o motivo de isenção é sempre obrigatório.
+ */
+export function validateGenericInvoiceForm(
+  form: GenericInvoiceForm,
+  taxOptions?: TaxOption[],
+): string | null {
   if (!form.customerCode.trim()) return 'Selecione o cliente.';
   if (!form.invoiceDate) return 'Indique a data do documento.';
+  if (form.currencyCode !== 'AOA' && !(toNumber(form.exchangeRate ?? '') > 0)) {
+    return 'Indique a taxa de câmbio para AOA (obrigatória quando a moeda não é AOA).';
+  }
   if (!form.billingPeriodStart || !form.billingPeriodEnd) {
     return 'Indique o período de facturação (início e fim).';
   }
@@ -136,13 +182,22 @@ export function validateGenericInvoiceForm(form: GenericInvoiceForm): string | n
       if (toNumber(movement.unit_price) < 0) {
         return `${label}: o preço unitário não pode ser negativo.`;
       }
-      if (toNumber(movement.tax_percentage) === 0 && !movement.tax_exemption_reason.trim()) {
-        return `${label}: indique o motivo da não aplicação de imposto nos movimentos isentos.`;
+      // GF é um tipo de factura: sem movimentos a preço 0 (fiscal_core recusa com 422).
+      if (toNumber(movement.unit_price) === 0) {
+        return `${label}: o preço unitário tem de ser superior a zero.`;
+      }
+      if (taxOptions) {
+        const problem = validateTaxChoice(taxOptions, movement.tax_table_entry_id, movement.tax_exemption_code);
+        if (problem.tax) return `${label}: escolha o imposto de todos os movimentos.`;
+      }
+      if (toNumber(movement.tax_percentage) === 0 && !movement.tax_exemption_code) {
+        return `${label}: indique o motivo de isenção nos movimentos com imposto a 0%.`;
       }
     }
   }
 
-  return null;
+  // Total do documento a zero (ex.: 0,001 × 1,00 arredonda a 0).
+  return validateDocumentValue(form.accounts.flatMap((account) => account.movements));
 }
 
 function normalizeTime(time: string): string {
@@ -160,6 +215,7 @@ export function buildGenericInvoicePayload(form: GenericInvoiceForm): CreateGene
     customer_tax_id: form.customerTaxId.trim() || undefined,
     invoice_date: form.invoiceDate,
     currency_code: form.currencyCode,
+    exchange_rate: form.currencyCode !== 'AOA' ? toNumber(form.exchangeRate ?? '') : undefined,
     billing_period_start: form.billingPeriodStart,
     billing_period_end: form.billingPeriodEnd,
     accounts: form.accounts.map((account) => ({
@@ -169,6 +225,7 @@ export function buildGenericInvoicePayload(form: GenericInvoiceForm): CreateGene
       currency_code: form.currencyCode,
       lines: account.movements.map((movement) => {
         const isExempt = toNumber(movement.tax_percentage) === 0;
+        // A descrição do motivo gravada vem do catálogo (fiscal_core), só segue o código.
         return {
           movement_at: `${movement.movement_date} ${normalizeTime(movement.movement_time)}`,
           movement_reference: movement.movement_reference.trim() || undefined,
@@ -176,10 +233,11 @@ export function buildGenericInvoicePayload(form: GenericInvoiceForm): CreateGene
           product_description: movement.product_description.trim(),
           quantity: toNumber(movement.quantity),
           unit_price: toNumber(movement.unit_price),
-          tax_type: 'IVA' as const,
-          tax_code: isExempt ? 'ISE' : 'NOR',
+          tax_type: movement.tax_type as TaxType,
+          tax_country_region: movement.tax_country_region,
+          tax_code: movement.tax_code,
           tax_percentage: toNumber(movement.tax_percentage),
-          tax_exemption_reason: isExempt ? movement.tax_exemption_reason.trim() : undefined,
+          tax_exemption_code: isExempt ? movement.tax_exemption_code || undefined : undefined,
         };
       }),
     })),

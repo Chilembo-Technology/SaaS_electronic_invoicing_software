@@ -23,6 +23,8 @@ import {
   TableRow,
 } from '../../../app/components/ui/table';
 import { FormAlert } from '../../../components/forms/FormAlert';
+import { useAuth } from '../../../contexts/AuthContext';
+import { isSuperAdmin } from '../../settings/utils/session';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 import { TAX_TYPE_OPTIONS, taxCountryRegionLabel, taxTypeLabel } from '../constants';
 import { useTaxes } from '../hooks/useTaxes';
@@ -80,6 +82,10 @@ export function TaxListPage() {
     toggleActive,
   } = useTaxes();
 
+  // Catálogo único (igual para todas as empresas): só o super-admin o altera.
+  const { user } = useAuth();
+  const canManage = isSuperAdmin(user);
+
   const [draftSearch, setDraftSearch] = useState('');
   const [draftType, setDraftType] = useState<'all' | TaxType>(ALL);
   const [draftStatus, setDraftStatus] = useState<'all' | TaxStatusFilter>(ALL);
@@ -110,15 +116,17 @@ export function TaxListPage() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Impostos</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Tabela de impostos (SAF-T) associada à empresa da sessão.
+            Tabela de impostos (SAF-T) — catálogo único, igual para todas as empresas.
           </p>
         </div>
-        <Button asChild>
-          <Link to="/taxes/create">
-            <Plus className="h-4 w-4" />
-            Novo Imposto
-          </Link>
-        </Button>
+        {canManage ? (
+          <Button asChild>
+            <Link to="/taxes/create">
+              <Plus className="h-4 w-4" />
+              Novo Imposto
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       <Card>
@@ -257,6 +265,7 @@ export function TaxListPage() {
                             <StatusBadge active={item.is_active} />
                           </TableCell>
                           <TableCell className="text-right">
+                            {canManage ? (
                             <div className="flex items-center justify-end gap-2">
                               <Button asChild variant="ghost" size="sm">
                                 <Link to={`/taxes/${item.id}/edit`}>Editar</Link>
@@ -275,6 +284,7 @@ export function TaxListPage() {
                                 {item.is_active ? 'Desativar' : 'Ativar'}
                               </Button>
                             </div>
+                            ) : null}
                           </TableCell>
                         </TableRow>
                       ))

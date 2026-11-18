@@ -101,14 +101,47 @@ export const CREATE_INVOICE_TYPE_OPTIONS: { value: string; label: string }[] =
 /** Tipos de operação aceites numa nota de crédito (CreateCreditNoteRequest). */
 export const NC_OPERATION_TYPES = ['Rectificação', 'Anulação'] as const;
 
-/** Mecanismos de pagamento aceites pela factura-recibo (FR). */
+/**
+ * Tipos de retenção na fonte (SAF-T WithholdingTaxType) —
+ * Decreto Executivo 317/20, campos 4.1.4.21.1 e 4.4.4.16.1.
+ */
+export const RETENTION_TYPES = [
+  { value: 'IRT', label: 'IRT — Rendimento do Trabalho' },
+  { value: 'II', label: 'II — Imposto Industrial' },
+  { value: 'IS', label: 'IS — Imposto do Selo' },
+  { value: 'IVA', label: 'IVA — IVA cativo' },
+  { value: 'IPU', label: 'IPU — Predial Urbano' },
+  { value: 'IAC', label: 'IAC — Aplicação de Capitais' },
+  { value: 'OU', label: 'OU — Outros' },
+] as const;
+
+/** SAF-T WithholdingTaxDescription: máximo de caracteres. */
+export const RETENTION_DESCRIPTION_MAX_LENGTH = 60;
+
+/**
+ * SAF-T PaymentMechanism (Decreto Executivo 317/20): o VALOR enviado é sempre
+ * o código de 2 letras — nunca o índice do seletor nem a descrição. O
+ * fiscal_core recusa (422) qualquer outro valor.
+ */
 export const PAYMENT_MECHANISM_OPTIONS: { value: string; label: string }[] = [
   { value: 'NU', label: 'Numerário' },
-  { value: 'TB', label: 'Transferência bancária' },
+  { value: 'TB', label: 'Transferência bancária ou débito directo autorizado' },
+  { value: 'MB', label: 'Referências de pagamento Multicaixa' },
   { value: 'CC', label: 'Cartão de crédito' },
-  { value: 'CH', label: 'Cheque' },
-  { value: 'MB', label: 'Multibanco' },
+  { value: 'CD', label: 'Cartão de débito' },
+  { value: 'CH', label: 'Cheque bancário' },
+  { value: 'CI', label: 'Crédito documentário internacional' },
+  { value: 'CO', label: 'Cheque ou cartão oferta' },
+  { value: 'CS', label: 'Compensação de saldos em conta corrente' },
+  { value: 'DE', label: 'Dinheiro electrónico' },
+  { value: 'PR', label: 'Permuta de bens' },
+  { value: 'OU', label: 'Outros meios' },
 ];
+
+/** Códigos válidos de PaymentMechanism. */
+export const PAYMENT_MECHANISM_CODES: readonly string[] = PAYMENT_MECHANISM_OPTIONS.map(
+  (option) => option.value,
+);
 
 /** Títulos das páginas de criação (género incluído na etiqueta). */
 export const CREATE_PAGE_TITLES: Record<string, string> = {

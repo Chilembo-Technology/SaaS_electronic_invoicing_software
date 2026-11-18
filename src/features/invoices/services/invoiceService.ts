@@ -3,6 +3,7 @@ import type {
   CreateGenericInvoicePayload,
   CreateInvoicePayload,
   Invoice,
+  InvoiceDateCheck,
   InvoiceFilters,
   InvoiceType,
   PaginatedResponse,
@@ -76,6 +77,18 @@ export const invoiceService = {
     });
     const body = response.data;
     return body.data ?? (body as unknown as Invoice);
+  },
+
+  /**
+   * A data do documento é muito anterior a hoje (mais de N dias úteis, config
+   * do fiscal_core)? Não bloqueia: serve para pedir confirmação antes de emitir.
+   */
+  async checkInvoiceDate(invoiceDate: string): Promise<InvoiceDateCheck> {
+    const response = await fiscalApi.get<ApiEnvelope<InvoiceDateCheck>>('/invoices/date-check', {
+      params: { invoice_date: invoiceDate },
+    });
+    const body = response.data;
+    return body.data ?? (body as unknown as InvoiceDateCheck);
   },
 
   /** Cria um documento fiscal do tipo indicado (default FT — factura). */

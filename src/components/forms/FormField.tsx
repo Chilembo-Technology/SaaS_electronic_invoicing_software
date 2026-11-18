@@ -6,7 +6,7 @@ import { Label } from "../../app/components/ui/label";
 import { cn } from "../../app/components/ui/utils";
 import { FieldError } from "./FieldError";
 
-export type FormFieldType = "text" | "email" | "password" | "tel";
+export type FormFieldType = "text" | "email" | "password" | "tel" | "datetime-local";
 
 interface FormFieldProps {
   id: string;

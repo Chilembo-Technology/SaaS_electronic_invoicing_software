@@ -34,6 +34,11 @@ export function buildCompanyFormData(payload: UpdateCompanyPayload): FormData {
 
   appendIfPresent(form, 'company_name', payload.company_name);
   appendIfPresent(form, 'tax_number', payload.tax_number);
+  // Registo comercial (SAF-T CompanyID): enviado mesmo vazio, para o poder limpar
+  // (o campo é `nullable` no organization_service).
+  if (payload.company_registry_number !== undefined) {
+    form.append('company_registry_number', payload.company_registry_number.trim());
+  }
   appendIfPresent(form, 'admin_email', payload.admin_email);
   appendIfPresent(form, 'phone', payload.phone);
   appendIfPresent(form, 'phone_number_alternative', payload.phone_number_alternative);
@@ -55,7 +60,6 @@ export function buildCompanyFormData(payload: UpdateCompanyPayload): FormData {
   appendIfPresent(form, 'holder', payload.holder);
   appendIfPresent(form, 'iban', payload.iban);
 
-  appendFileIfPresent(form, 'private_key', payload.private_key);
   appendFileIfPresent(form, 'logo', payload.logo);
 
   return form;

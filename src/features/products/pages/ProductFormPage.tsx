@@ -27,6 +27,7 @@ import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 import { PRODUCT_TYPE_OPTIONS, UNIT_OF_MEASURE_OPTIONS } from '../constants';
 import { useProductCategories } from '../hooks/useProductCategories';
 import { useProductForm } from '../hooks/useProductForm';
+import { TaxSelect } from '../../taxes/components/TaxSelect';
 import type { ProductType } from '../types';
 
 const NO_TYPE = 'none';
@@ -46,6 +47,7 @@ export function ProductFormPage() {
     error,
     fieldErrors,
     loadError,
+    taxCatalog,
   } = useProductForm(id);
 
   const { categories } = useProductCategories();
@@ -295,6 +297,21 @@ export function ProductFormPage() {
                   <FieldError id="unit_price-error" message={fieldErrors.unit_price} />
                 ) : null}
               </div>
+
+              {/* Imposto proposto nas facturas: IVA 14 % por omissão; a 0 % exige o motivo. */}
+              <TaxSelect
+                idPrefix="product"
+                options={taxCatalog.options}
+                exemptionReasons={taxCatalog.exemptionReasons}
+                taxId={values.tax_table_entry_id}
+                exemptionCode={values.tax_exemption_code}
+                onChange={(taxId, exemptionCode) => {
+                  setField('tax_table_entry_id', taxId);
+                  setField('tax_exemption_code', exemptionCode);
+                }}
+                taxError={fieldErrors.tax_table_entry_id ?? taxCatalog.error ?? undefined}
+                exemptionError={fieldErrors.tax_exemption_code}
+              />
 
               <div className="space-y-1.5">
                 <Label htmlFor="expiration_date">Data de validade</Label>

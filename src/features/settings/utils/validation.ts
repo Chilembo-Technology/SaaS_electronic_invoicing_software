@@ -57,8 +57,6 @@ export const SETTINGS_MESSAGES = {
   passwordRequired: MESSAGES.passwordRequired,
   passwordMin: MESSAGES.passwordMin,
   confirmMismatch: MESSAGES.confirmPasswordMismatch,
-  privateKeyMimes: 'A chave privada deve ser um ficheiro PDF, JPG, JPEG, PNG, GIF, SVG ou WEBP.',
-  privateKeyMax: 'A chave privada não pode ter mais que 2MB (2048 kilobytes).',
   bankIdInvalid: 'O ID do banco deve ser um UUID (identificador universal) válido.',
   accountNumberFormat: 'O número da conta deve conter apenas 11 dígitos numéricos.',
   holderMax: 'O titular deve ter no máximo 255 caracteres.',
@@ -146,15 +144,6 @@ export function validateLogoFile(file: File | null): string | undefined {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   if (!LOGO_ALLOWED_EXTENSIONS.includes(extension)) return MESSAGES.logoMimes;
   if (file.size > LOGO_MAX_BYTES) return MESSAGES.logoMax;
-  return undefined;
-}
-
-/** Valida a chave privada (mesmas restrições `mimes`/`max` do logo). */
-export function validatePrivateKeyFile(file: File | null): string | undefined {
-  if (!file) return undefined;
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-  if (!LOGO_ALLOWED_EXTENSIONS.includes(extension)) return SETTINGS_MESSAGES.privateKeyMimes;
-  if (file.size > LOGO_MAX_BYTES) return SETTINGS_MESSAGES.privateKeyMax;
   return undefined;
 }
 

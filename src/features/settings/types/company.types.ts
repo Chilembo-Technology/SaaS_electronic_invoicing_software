@@ -45,6 +45,8 @@ export interface CompanySettings {
   id: string;
   company_name: string;
   tax_number: string;
+  /** Registo comercial (SAF-T 1.2 CompanyID); `''` quando não preenchido. */
+  company_registry_number: string;
   admin_email: string;
   phone: string;
   phone_number_alternative: string;
@@ -78,6 +80,8 @@ export interface UpdateCompanyPayload {
   company_id: string;
   company_name?: string;
   tax_number?: string;
+  /** Enviado sempre (vazio limpa o campo no organization_service). */
+  company_registry_number?: string;
   admin_email?: string;
   phone?: string;
   phone_number_alternative?: string;
@@ -88,7 +92,6 @@ export interface UpdateCompanyPayload {
   website?: string;
   share_capital?: string;
   swift_bic?: string;
-  private_key?: File | null;
   logo?: File | null;
   /**
    * Dados bancários (`corporate_accounts`).
@@ -106,6 +109,7 @@ export interface UpdateCompanyPayload {
 export interface CompanyFormValues {
   company_name: string;
   tax_number: string;
+  company_registry_number: string;
   admin_email: string;
   phone: string;
   phone_number_alternative: string;

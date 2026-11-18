@@ -28,7 +28,10 @@ export type InvoiceType =
 export type TaxType = 'IVA' | 'IS' | 'NS';
 
 /** Tipo de operação de uma nota de crédito (CreateCreditNoteRequest). */
-export type CreditNoteOperationType = 'Rectificação' | 'Anulação';
+export type CreditNoteOperationType = 'Rectificação' 
+/** SAF-T WithholdingTaxType aceite no recibo (RG). */
+export type RetentionType = 'IRT' | 'II' | 'IS' | 'IVA' | 'IPU' | 'IAC' | 'OU';
+| 'Anulação';
 
 /** Linha de documento devolvida pelo `InvoiceResource`. */
 export interface InvoiceLine {
@@ -131,6 +134,15 @@ export interface InvoiceFilters {
   per_page?: number;
 }
 
+/** `GET /api/v1/invoices/date-check` — data do documento muito anterior a hoje. */
+export interface InvoiceDateCheck {
+  invoice_date: string;
+  business_days_before_today: number;
+  limit_business_days: number;
+  warning: boolean;
+  message: string | null;
+}
+
 export interface PaginationMeta {
   current_page: number;
   last_page: number;
@@ -155,8 +167,11 @@ export interface CreateInvoiceLine {
   credit_amount?: number;
   description?: string;
   tax_type?: TaxType;
+  tax_country_region?: string;
   tax_code?: string;
   tax_percentage?: number;
+  /** Motivo de isenção (M..) — obrigatório quando a taxa é 0 %. */
+  tax_exemption_code?: string;
 }
 
 /** Pagamento de uma factura-recibo (FR) — estrutura exigida pelo CreateInvoiceReceiptRequest. */
@@ -175,25 +190,30 @@ export interface CreateInvoicePayload {
   eac_code?: string;
   /** Obrigatório para documentos com linhas; omitido no recibo (RG). */
   lines?: CreateInvoiceLine[];
-  /** Nota de crédito (NC). */
+  /** Nota de crédito (NC); source_document e rectification_reason também na nota de débito (ND). */
   operation_type?: CreditNoteOperationType;
   rectification_reason?: string;
   source_document?: string;
-  /** Recibo (RG). */
+  /** Recibo (RG): base, imposto e total são calculados pelo fiscal_core a partir da factura liquidada. */
   invoice_reference?: string;
-  tax_total?: number;
-  invoice_total?: number;
   retention_amount?: number;
+  /** Tipo de retenção/cativação (SAF-T WithholdingTaxType) — obrigatório se retention_amount > 0. */
+  retention_type?: RetentionType;
+  /** WithholdingTaxDescription (máx. 60) — obrigatória no IS (código da verba). */
+  retention_description?: string;
   amount_paid?: number;
-  amount_due?: number;
   payment_mechanism?: string;
-  /** Factura-recibo (FR) — pagamentos obrigatórios. */
+  /** FR e AR — pagamentos obrigatórios; a soma tem de ser o total do documento. */
   payments?: PaymentDraft[];
-  /** Guia de transporte (GT). */
+  /** Guias: origem só na GT; destino (ShipTo) obrigatório na GT e na GR. */
   origin_city?: string;
   origin_address?: string;
   destination_city?: string;
   destination_address?: string;
+  /** Guias (GT/GR): início do transporte em hora de Luanda (YYYY-MM-DDTHH:mm). */
+  movement_start_time?: string;
+  /** Guias (GT/GR): código atribuído pela AGT (opcional). */
+  at_doc_code_id?: string;
 }
 
 /** Movimento (linha) de uma conta na Factura Genérica. */
@@ -206,9 +226,10 @@ export interface CreateGenericInvoiceMovement {
   quantity: number;
   unit_price: number;
   tax_type?: TaxType;
+  tax_country_region?: string;
   tax_code?: string;
   tax_percentage?: number;
-  tax_exemption_reason?: string;
+  /** Motivo de isenção (M..) do catálogo — obrigatório a 0 %; a descrição gravada vem do catálogo. */
   tax_exemption_code?: string;
 }
 
@@ -228,6 +249,8 @@ export interface CreateGenericInvoicePayload {
   customer_tax_id?: string;
   invoice_date: string;
   currency_code: string;
+  /** Câmbio para AOA — obrigatório quando a moeda não é AOA (assina-se o contravalor em AOA). */
+  exchange_rate?: number;
   billing_period_start: string;
   billing_period_end: string;
   accounts: CreateGenericInvoiceAccount[];

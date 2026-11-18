@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
-import { ArrowLeft, FileCheck2, Loader2, PackagePlus, Plus, Trash2, UserPlus } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, FileCheck2, Loader2, PackagePlus, Plus, Trash2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '../../../app/components/ui/button';
@@ -40,7 +40,10 @@ import {
   CREATE_INVOICE_TYPE_OPTIONS,
   CREATE_PAGE_TITLES,
   NC_OPERATION_TYPES,
+  PAYMENT_MECHANISM_CODES,
   PAYMENT_MECHANISM_OPTIONS,
+  RETENTION_DESCRIPTION_MAX_LENGTH,
+  RETENTION_TYPES,
   invoiceTypeLabel,
   isFinancialInstitutionOnlyType,
 } from '../constants';
@@ -49,9 +52,19 @@ import type {
   CreditNoteOperationType,
   InvoiceType,
   PaymentDraft,
+  RetentionType,
   TaxType,
 } from '../types';
 import type { Product, ProductType } from '../../products/types';
+import { nowInAngolaForInput, todayInAngola } from '@/lib/angolaTime';
+import { validateRetention } from '../utils/retention';
+import { rejectsZeroValue, validateDocumentValue } from '../utils/documentValue';
+import { computeDocumentTotals, validatePaymentsTotal } from '../utils/documentTotals';
+import { useBackdatedDateConfirmation } from '../hooks/useBackdatedDateConfirmation';
+import { BackdatedDateDialog } from '../components/BackdatedDateDialog';
+import { differsFromProductTax, lineTaxFields, validateTaxChoice, type TaxOption } from '../../taxes/catalog';
+import { TaxSelect } from '../../taxes/components/TaxSelect';
+import { useTaxCatalog } from '../../taxes/hooks/useTaxCatalog';
 
 interface LineDraft {
   id: string;
@@ -62,6 +75,10 @@ interface LineDraft {
   tax_percentage: string;
   tax_type: string;
   tax_code: string;
+  /** Opção do catálogo de impostos (o tipo/código/% acima derivam dela). */
+  tax_table_entry_id: string;
+  /** Motivo de isenção (M..) — obrigatório a 0 %. */
+  tax_exemption_code: string;
   credit_amount: string;
 }
 
@@ -75,12 +92,40 @@ function makeLine(): LineDraft {
     tax_percentage: '',
     tax_type: '',
     tax_code: '',
+    tax_table_entry_id: '',
+    tax_exemption_code: '',
     credit_amount: '0',
   };
 }
 
+/** Imposto da linha no payload: a partir da opção do catálogo escolhida. */
+function lineTaxPayload(options: TaxOption[], line: LineDraft) {
+  const option = options.find((item) => item.id === line.tax_table_entry_id);
+  if (option) {
+    const fields = lineTaxFields(option, line.tax_exemption_code);
+    return { ...fields, tax_type: fields.tax_type as TaxType };
+  }
+  return {
+    tax_type: line.tax_type === '' ? undefined : (line.tax_type as TaxType),
+    tax_code: line.tax_code === '' ? undefined : line.tax_code,
+    tax_percentage: line.tax_percentage === '' ? undefined : toNumber(line.tax_percentage),
+  };
+}
+
+/** Campos de imposto da linha a partir de uma opção do catálogo. */
+function taxPatch(option: TaxOption, exemptionCode: string): Partial<LineDraft> {
+  return {
+    tax_table_entry_id: option.id,
+    tax_type: option.tax_type,
+    tax_code: option.tax_code,
+    tax_percentage: String(option.tax_percentage),
+    tax_exemption_code: option.requires_exemption_reason ? exemptionCode : '',
+  };
+}
+
+// Dia de Angola: o backend valida a data contra o dia de Luanda, não o dia UTC.
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInAngola();
 }
 
 function toNumber(value: string): number {
@@ -95,16 +140,26 @@ function formatMoney(value: number): string {
   })} Kz`;
 }
 
-/** Campos de linha preenchidos a partir de um produto (imposto por omissão: IVA 14%). */
-function productLinePatch(product: Product): Partial<LineDraft> {
-  return {
+/**
+ * Campos de linha preenchidos a partir de um produto: o imposto proposto é o
+ * do produto (o utilizador pode alterá-lo na linha). Produto sem imposto
+ * conhecido (catálogo ainda a carregar): IVA 14 %.
+ */
+function productLinePatch(product: Product, options: TaxOption[]): Partial<LineDraft> {
+  const base = {
     product_code: product.product_code,
     product_description: product.product_description,
     unit_price: product.unit_price != null ? String(product.unit_price) : '',
-    tax_type: 'IVA',
-    tax_code: 'NOR',
-    tax_percentage: '14',
   };
+  const option =
+    options.find((item) => item.id === product.tax_table_entry_id) ??
+    options.find((item) => item.is_default);
+
+  if (option) {
+    return { ...base, ...taxPatch(option, product.tax_exemption_code ?? '') };
+  }
+
+  return { ...base, tax_type: 'IVA', tax_code: 'NOR', tax_percentage: '14' };
 }
 
 /** Campo numérico com rótulo, asterisco de obrigatório e erro inline. */
@@ -194,12 +249,21 @@ export function InvoiceCreatePage() {
 
   const { categories } = useProductCategories();
 
+  // Data muito anterior a hoje: confirmação antes de emitir (não bloqueia).
+  const {
+    confirmDate,
+    isChecking: isCheckingDate,
+    dialogProps: backdatedDialogProps,
+  } = useBackdatedDateConfirmation();
+
   const { user } = useAuth();
   const companyId = getCompanyId(user);
 
   const isReceipt = type === 'RG';
-  const isInvoiceReceipt = type === 'FR';
+  // Pagos no acto (FR e AR): pagamento obrigatório e igual ao total do documento.
+  const isInvoiceReceipt = type === 'FR' || type === 'AR';
   const isCreditNote = type === 'NC';
+  const isDebitNote = type === 'ND';
   const isTransportGuide = type === 'GT';
   const isDeliveryNote = type === 'GR';
   const usesLineAmount = isTransportGuide || isDeliveryNote;
@@ -219,11 +283,10 @@ export function InvoiceCreatePage() {
 
   // Recibo (RG)
   const [invoiceReference, setInvoiceReference] = useState('');
-  const [taxTotal, setTaxTotal] = useState('');
-  const [invoiceTotal, setInvoiceTotal] = useState('');
   const [retentionAmount, setRetentionAmount] = useState('');
+  const [retentionType, setRetentionType] = useState<RetentionType | ''>('');
+  const [retentionDescription, setRetentionDescription] = useState('');
   const [amountPaid, setAmountPaid] = useState('');
-  const [amountDue, setAmountDue] = useState('');
   const [paymentMechanism, setPaymentMechanism] = useState('');
 
   // Factura-recibo (FR) — pagamento obrigatório
@@ -236,6 +299,10 @@ export function InvoiceCreatePage() {
   const [originAddress, setOriginAddress] = useState('');
   const [destinationCity, setDestinationCity] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
+
+  // Guias (GT/GR) — SAF-T 4.2: início do transporte (hora de Luanda) e código AGT.
+  const [movementStartTime, setMovementStartTime] = useState(() => nowInAngolaForInput());
+  const [atDocCodeId, setAtDocCodeId] = useState('');
 
   // Criação rápida de cliente
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -259,6 +326,19 @@ export function InvoiceCreatePage() {
   const [productSaving, setProductSaving] = useState(false);
   const [productFormError, setProductFormError] = useState<string | null>(null);
 
+  // Catálogo de impostos: as linhas sem imposto escolhido ficam com o por omissão (IVA 14 %).
+  const taxCatalog = useTaxCatalog();
+  const defaultTax = taxCatalog.options.find((option) => option.is_default);
+
+  useEffect(() => {
+    if (!defaultTax) return;
+    setLines((current) =>
+      current.some((line) => !line.tax_table_entry_id)
+        ? current.map((line) => (line.tax_table_entry_id ? line : { ...line, ...taxPatch(defaultTax, '') }))
+        : current,
+    );
+  }, [defaultTax, lines.length]);
+
   const addLine = () => setLines((current) => [...current, makeLine()]);
   const removeLine = (id: string) =>
     setLines((current) => current.filter((line) => line.id !== id));
@@ -281,11 +361,11 @@ export function InvoiceCreatePage() {
   const onSelectProduct = (lineId: string, code: string) => {
     const product = products.find((item) => item.product_code === code);
     if (!product) return;
-    updateLine(lineId, productLinePatch(product));
+    updateLine(lineId, productLinePatch(product, taxCatalog.options));
   };
 
   const applyNewProductToLine = (product: Product) => {
-    const patch = productLinePatch(product);
+    const patch = productLinePatch(product, taxCatalog.options);
     setLines((current) => {
       const emptyIndex = current.findIndex((line) => !line.product_code.trim());
       if (emptyIndex >= 0) {
@@ -406,6 +486,8 @@ export function InvoiceCreatePage() {
 
   const resetForm = () => {
     reset();
+    setMovementStartTime(nowInAngolaForInput());
+    setAtDocCodeId('');
     setCustomerCode('');
     setCustomerName('');
     setCustomerTaxId('');
@@ -416,11 +498,8 @@ export function InvoiceCreatePage() {
     setRectificationReason('');
     setSourceDocument('');
     setInvoiceReference('');
-    setTaxTotal('');
-    setInvoiceTotal('');
     setRetentionAmount('');
     setAmountPaid('');
-    setAmountDue('');
     setPaymentMechanism('');
     setPayments([{ payment_mechanism: '', payment_amount: 0, payment_date: today() }]);
     setOriginCity('');
@@ -429,33 +508,23 @@ export function InvoiceCreatePage() {
     setDestinationAddress('');
   };
 
-  const subtotal = lines.reduce(
-    (sum, line) => sum + toNumber(line.quantity) * toNumber(line.unit_price),
-    0,
-  );
-  const tax = lines.reduce((sum, line) => {
-    const base = toNumber(line.quantity) * toNumber(line.unit_price);
-    const pct = line.tax_percentage === '' ? 0 : toNumber(line.tax_percentage);
-    return sum + (base * pct) / 100;
-  }, 0);
-  const total = subtotal + tax;
+  // Mesmo arredondamento do fiscal_core: o total mostrado é o GrossTotal gravado.
+  const { net: subtotal, tax, gross: total } = computeDocumentTotals(lines);
   const linesTotal = lines.reduce(
     (sum, line) => sum + toNumber(line.credit_amount),
     0,
   );
 
-  // Pré-preenche o valor do pagamento (FR) com o total calculado do documento.
+  // FR/AR (pagos no acto): o pagamento é sempre o total do documento.
   useEffect(() => {
-    if (type === 'FR') {
+    if (isInvoiceReceipt) {
       setPayments((current) =>
         current.map((payment, index) =>
-          index === 0 && payment.payment_amount === 0
-            ? { ...payment, payment_amount: total }
-            : payment,
+          index === 0 ? { ...payment, payment_amount: total } : payment,
         ),
       );
     }
-  }, [type, total]);
+  }, [isInvoiceReceipt, total]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -478,31 +547,35 @@ export function InvoiceCreatePage() {
         setLocalError('A referência da factura é obrigatória.');
         return;
       }
-      if (taxTotal.trim() === '' || toNumber(taxTotal) < 0) {
-        setLocalError('O total de imposto é obrigatório.');
-        return;
-      }
-      if (invoiceTotal.trim() === '' || toNumber(invoiceTotal) < 0) {
-        setLocalError('O total da factura é obrigatório.');
-        return;
-      }
       if (amountPaid.trim() === '' || toNumber(amountPaid) < 0) {
         setLocalError('O valor pago é obrigatório.');
         return;
       }
-      if (amountDue.trim() === '' || toNumber(amountDue) < 0) {
-        setLocalError('O valor em dívida é obrigatório.');
+      if (!PAYMENT_MECHANISM_CODES.includes(paymentMechanism)) {
+        setLocalError('Selecione o mecanismo de pagamento.');
         return;
       }
 
+      // Base, imposto e total do recibo são calculados pelo fiscal_core a partir
+      // da factura liquidada (proporcionais ao valor pago + retido).
       payload.invoice_reference = invoiceReference.trim();
-      payload.tax_total = toNumber(taxTotal);
-      payload.invoice_total = toNumber(invoiceTotal);
       payload.retention_amount =
         retentionAmount.trim() === '' ? undefined : toNumber(retentionAmount);
+      const retentionError = validateRetention({
+        amount: payload.retention_amount ?? 0,
+        type: retentionType,
+        description: retentionDescription,
+      });
+      if (retentionError) {
+        setLocalError(retentionError);
+        return;
+      }
+      if ((payload.retention_amount ?? 0) > 0 && retentionType) {
+        payload.retention_type = retentionType;
+        payload.retention_description = retentionDescription.trim() || undefined;
+      }
       payload.amount_paid = toNumber(amountPaid);
-      payload.amount_due = toNumber(amountDue);
-      payload.payment_mechanism = paymentMechanism.trim() || undefined;
+      payload.payment_mechanism = paymentMechanism;
     } else {
       const invalidLine = lines.find(
         (line) =>
@@ -520,6 +593,27 @@ export function InvoiceCreatePage() {
         return;
       }
 
+      // Imposto da linha: tem de vir do catálogo; a 0 % exige o motivo de isenção.
+      const taxProblem = usesLineAmount
+        ? undefined
+        : lines
+            .map((line, index) => ({
+              index,
+              ...validateTaxChoice(taxCatalog.options, line.tax_table_entry_id, line.tax_exemption_code),
+            }))
+            .find((result) => result.tax || result.exemption);
+      if (taxProblem) {
+        setLocalError(`Linha ${taxProblem.index + 1}: ${taxProblem.tax ?? taxProblem.exemption}`);
+        return;
+      }
+
+      // Tipos de factura: sem linhas a preço 0 nem total 0 (guias e PP/OR podem).
+      const valueProblem = !usesLineAmount && rejectsZeroValue(type) ? validateDocumentValue(lines) : null;
+      if (valueProblem) {
+        setLocalError(valueProblem);
+        return;
+      }
+
       payload.lines = lines.map((line) =>
         usesLineAmount
           ? {
@@ -533,13 +627,7 @@ export function InvoiceCreatePage() {
             product_description: line.product_description.trim(),
             quantity: toNumber(line.quantity),
             unit_price: toNumber(line.unit_price),
-            tax_type:
-              line.tax_type === '' ? undefined : (line.tax_type as TaxType),
-            tax_code: line.tax_code === '' ? undefined : line.tax_code,
-            tax_percentage:
-              line.tax_percentage === ''
-                ? undefined
-                : toNumber(line.tax_percentage),
+            ...lineTaxPayload(taxCatalog.options, line),
           },
       );
 
@@ -561,6 +649,19 @@ export function InvoiceCreatePage() {
         payload.source_document = sourceDocument.trim();
       }
 
+      if (isDebitNote) {
+        if (!sourceDocument.trim()) {
+          setLocalError('O documento de origem é obrigatório.');
+          return;
+        }
+        if (!rectificationReason.trim()) {
+          setLocalError('O motivo da nota de débito é obrigatório.');
+          return;
+        }
+        payload.source_document = sourceDocument.trim();
+        payload.rectification_reason = rectificationReason.trim();
+      }
+
       if (isTransportGuide) {
         if (
           !originCity.trim() ||
@@ -575,6 +676,27 @@ export function InvoiceCreatePage() {
         payload.origin_address = originAddress.trim();
         payload.destination_city = destinationCity.trim();
         payload.destination_address = destinationAddress.trim();
+      }
+
+      // GR: o local de descarga (SAF-T ShipTo) é obrigatório.
+      if (isDeliveryNote) {
+        if (!destinationCity.trim() || !destinationAddress.trim()) {
+          setLocalError('Preencha a morada e a cidade de destino (local de descarga).');
+          return;
+        }
+        payload.destination_city = destinationCity.trim();
+        payload.destination_address = destinationAddress.trim();
+      }
+
+      if (usesLineAmount) {
+        if (!movementStartTime) {
+          setLocalError('Indique a data e hora de início do transporte.');
+          return;
+        }
+        payload.movement_start_time = movementStartTime;
+        if (atDocCodeId.trim()) {
+          payload.at_doc_code_id = atDocCodeId.trim();
+        }
       }
     }
 
@@ -592,6 +714,11 @@ export function InvoiceCreatePage() {
         setLocalError('O valor do pagamento tem de ser superior a zero.');
         return;
       }
+      const paymentsError = validatePaymentsTotal([payment], total);
+      if (paymentsError) {
+        setLocalError(paymentsError);
+        return;
+      }
       payload.payments = [
         {
           payment_mechanism: payment.payment_mechanism,
@@ -600,6 +727,8 @@ export function InvoiceCreatePage() {
         },
       ];
     }
+
+    if (!(await confirmDate(invoiceDate))) return;
 
     await createInvoice(payload, type);
   };
@@ -784,17 +913,13 @@ export function InvoiceCreatePage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="payment_amount">Valor pago</Label>
+                <Label htmlFor="payment_amount">Valor pago (= total do documento)</Label>
                 <Input
                   className="bg-muted border-none"
                   id="payment_amount"
                   type="number"
-                  min="0"
-                  step="any"
+                  readOnly
                   value={payments[0]?.payment_amount ?? 0}
-                  onChange={(e) =>
-                    updatePayment(0, { payment_amount: toNumber(e.target.value) })
-                  }
                 />
               </div>
             </CardContent>
@@ -816,31 +941,38 @@ export function InvoiceCreatePage() {
                 placeholder="FT 2026/123"
                 error={fieldErrors.invoiceReference}
               />
-              <FormField
-                id="payment_mechanism"
-                label="Mecanismo de pagamento (opcional)"
-                value={paymentMechanism}
-                onChange={setPaymentMechanism}
-                placeholder="Numerário"
-                maxLength={10}
-                error={fieldErrors.paymentMechanism}
-              />
-              <NumberField
-                id="tax_total"
-                label="Total de imposto"
-                required
-                value={taxTotal}
-                onChange={setTaxTotal}
-                error={fieldErrors.taxTotal}
-              />
-              <NumberField
-                id="invoice_total"
-                label="Total da factura"
-                required
-                value={invoiceTotal}
-                onChange={setInvoiceTotal}
-                error={fieldErrors.invoiceTotal}
-              />
+              <div className="space-y-1.5">
+                <Label htmlFor="payment_mechanism">
+                  Mecanismo de pagamento
+                  <span className="text-destructive" aria-hidden="true">
+                    *
+                  </span>
+                </Label>
+                {/* O valor é o código SAF-T (NU, TB, …), nunca o índice da opção. */}
+                <Select value={paymentMechanism} onValueChange={setPaymentMechanism}>
+                  <SelectTrigger
+                    id="payment_mechanism"
+                    className="bg-muted border-none"
+                    aria-invalid={Boolean(fieldErrors.paymentMechanism)}
+                  >
+                    <SelectValue placeholder="Selecione o mecanismo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_MECHANISM_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {fieldErrors.paymentMechanism ? (
+                  <FieldError message={fieldErrors.paymentMechanism} />
+                ) : null}
+              </div>
+              <p className="text-sm text-muted-foreground sm:col-span-2">
+                A base, o imposto e o total do recibo são calculados a partir da factura
+                liquidada, em proporção do valor pago (mais a retenção, se houver).
+              </p>
               <NumberField
                 id="retention_amount"
                 label="Retenção na fonte (opcional)"
@@ -848,6 +980,54 @@ export function InvoiceCreatePage() {
                 onChange={setRetentionAmount}
                 error={fieldErrors.retentionAmount}
               />
+              {toNumber(retentionAmount) > 0 ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="retention_type">
+                    Tipo de retenção/cativação
+                    <span className="text-destructive" aria-hidden="true">
+                      *
+                    </span>
+                  </Label>
+                  <Select
+                    value={retentionType}
+                    onValueChange={(value) => setRetentionType(value as RetentionType)}
+                  >
+                    <SelectTrigger
+                      className="bg-muted border-none"
+                      id="retention_type"
+                      aria-invalid={Boolean(fieldErrors.retentionType)}
+                    >
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RETENTION_TYPES.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {fieldErrors.retentionType ? (
+                    <FieldError message={fieldErrors.retentionType} />
+                  ) : null}
+                </div>
+              ) : null}
+              {toNumber(retentionAmount) > 0 ? (
+                <FormField
+                  id="retention_description"
+                  label={
+                    retentionType === 'IS'
+                      ? 'Código da verba (Imposto do Selo)'
+                      : 'Descrição da retenção (opcional)'
+                  }
+                  required={retentionType === 'IS'}
+                  value={retentionDescription}
+                  onChange={setRetentionDescription}
+                  placeholder={retentionType === 'IS' ? 'Verba 23.3' : 'Ex.: Retenção na fonte'}
+                  maxLength={RETENTION_DESCRIPTION_MAX_LENGTH}
+                  error={fieldErrors.retentionDescription}
+                />
+              ) : null}
               <NumberField
                 id="amount_paid"
                 label="Valor pago"
@@ -855,14 +1035,6 @@ export function InvoiceCreatePage() {
                 value={amountPaid}
                 onChange={setAmountPaid}
                 error={fieldErrors.amountPaid}
-              />
-              <NumberField
-                id="amount_due"
-                label="Valor em dívida"
-                required
-                value={amountDue}
-                onChange={setAmountDue}
-                error={fieldErrors.amountDue}
               />
             </CardContent>
           </Card>
@@ -922,36 +1094,99 @@ export function InvoiceCreatePage() {
                 value={rectificationReason}
                 onChange={setRectificationReason}
                 placeholder="Correcção do valor facturado"
+                maxLength={50}
                 error={fieldErrors.rectificationReason}
               />
             </CardContent>
           </Card>
         ) : null}
 
-        {isTransportGuide ? (
+        {isDebitNote ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Origem e destino</CardTitle>
+              <CardTitle className="text-base">Dados da nota de débito</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <FormField
-                id="origin_address"
-                label="Morada de origem"
+                id="source_document"
+                label="Documento de origem"
                 required
-                value={originAddress}
-                onChange={setOriginAddress}
-                placeholder="Rua, nº"
-                error={fieldErrors.originAddress}
+                value={sourceDocument}
+                onChange={setSourceDocument}
+                placeholder="FT 2026/100"
+                error={fieldErrors.sourceDocument}
               />
               <FormField
-                id="origin_city"
-                label="Cidade de origem"
+                id="rectification_reason"
+                label="Motivo"
                 required
-                value={originCity}
-                onChange={setOriginCity}
-                placeholder="Luanda"
-                error={fieldErrors.originCity}
+                value={rectificationReason}
+                onChange={setRectificationReason}
+                placeholder="Juros de mora"
+                maxLength={50}
+                error={fieldErrors.rectificationReason}
               />
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {usesLineAmount ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Transporte</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                id="movement_start_time"
+                label="Início do transporte (hora de Luanda)"
+                type="datetime-local"
+                required
+                value={movementStartTime}
+                onChange={setMovementStartTime}
+                error={fieldErrors.movementStartTime}
+              />
+              <FormField
+                id="at_doc_code_id"
+                label="Código AGT da guia (opcional)"
+                value={atDocCodeId}
+                onChange={setAtDocCodeId}
+                maxLength={200}
+                error={fieldErrors.atDocCodeId}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {usesLineAmount ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {isTransportGuide ? 'Origem e destino' : 'Destino (local de descarga)'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {isTransportGuide ? (
+                <>
+                  <FormField
+                    id="origin_address"
+                    label="Morada de origem"
+                    required
+                    value={originAddress}
+                    onChange={setOriginAddress}
+                    placeholder="Rua, nº"
+                    error={fieldErrors.originAddress}
+                  />
+                  <FormField
+                    id="origin_city"
+                    label="Cidade de origem"
+                    required
+                    value={originCity}
+                    onChange={setOriginCity}
+                    placeholder="Luanda"
+                    error={fieldErrors.originCity}
+                  />
+                </>
+              ) : null}
               <FormField
                 id="destination_address"
                 label="Morada de destino"
@@ -995,10 +1230,28 @@ export function InvoiceCreatePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {lines.map((line, index) => (
+              {lines.map((line, index) => {
+                // Imposto alterado na linha (≠ do produto): fica editável, mas assinalado.
+                const product = products.find((item) => item.product_code === line.product_code);
+                const productTax = product
+                  ? taxCatalog.options.find((option) => option.id === product.tax_table_entry_id)
+                  : undefined;
+                const taxChanged =
+                  !usesLineAmount &&
+                  differsFromProductTax(
+                    { taxId: line.tax_table_entry_id, exemptionCode: line.tax_exemption_code },
+                    product
+                      ? { taxId: product.tax_table_entry_id, exemptionCode: product.tax_exemption_code }
+                      : null,
+                  );
+
+                return (
                 <div
                   key={line.id}
-                  className="grid gap-3 rounded-md border p-4 sm:grid-cols-12"
+                  className={`grid gap-3 rounded-md border p-4 sm:grid-cols-12 ${
+                    taxChanged ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/20' : ''
+                  }`}
+                  data-tax-changed={taxChanged || undefined}
                 >
                   <div className="space-y-1.5 sm:col-span-6">
                     <Label htmlFor={`line-${line.id}-product`}>Produto</Label>
@@ -1074,20 +1327,35 @@ export function InvoiceCreatePage() {
                           }
                         />
                       </div>
-                      <div className="space-y-1.5 sm:col-span-1">
-                        <Label htmlFor={`line-${line.id}-tax`}>IVA %</Label>
-                        <Input
-                          className="bg-muted border-none"
-                          id={`line-${line.id}-tax`}
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={line.tax_percentage}
-                          onChange={(e) =>
-                            updateLine(line.id, { tax_percentage: e.target.value })
-                          }
-                          placeholder="14"
-                        />
+                      {/* Imposto proposto pelo produto; pode ser alterado na linha. */}
+                      <div className="space-y-3 sm:col-span-12">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <TaxSelect
+                            idPrefix={`line-${line.id}`}
+                            compact
+                            options={taxCatalog.options}
+                            exemptionReasons={taxCatalog.exemptionReasons}
+                            taxId={line.tax_table_entry_id}
+                            exemptionCode={line.tax_exemption_code}
+                            onChange={(taxId, exemptionCode) => {
+                              const option = taxCatalog.options.find((item) => item.id === taxId);
+                              if (option) updateLine(line.id, taxPatch(option, exemptionCode));
+                            }}
+                          />
+                        </div>
+                        {taxChanged ? (
+                          <p
+                            role="status"
+                            className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-400"
+                          >
+                            <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+                            Imposto diferente do definido no produto
+                            {productTax
+                              ? ` (${productTax.label}${product?.tax_exemption_code ? ` · ${product.tax_exemption_code}` : ''})`
+                              : ''}
+                            .
+                          </p>
+                        ) : null}
                       </div>
                     </>
                   )}
@@ -1104,7 +1372,8 @@ export function InvoiceCreatePage() {
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         ) : null}
@@ -1136,7 +1405,7 @@ export function InvoiceCreatePage() {
                 )}
               </div>
               <div className="flex flex-wrap justify-end gap-2">
-                <Button type="submit" disabled={isLoading || customersLoading}>
+                <Button type="submit" disabled={isLoading || customersLoading || isCheckingDate}>
                   {isLoading ? (
                     <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                   ) : null}
@@ -1148,7 +1417,7 @@ export function InvoiceCreatePage() {
         ) : (
           <Card>
             <CardContent className="pt-6 flex flex-wrap justify-end gap-2">
-              <Button type="submit" disabled={isLoading || customersLoading}>
+              <Button type="submit" disabled={isLoading || customersLoading || isCheckingDate}>
                 {isLoading ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : null}
@@ -1158,6 +1427,8 @@ export function InvoiceCreatePage() {
           </Card>
         )}
       </form>
+
+      <BackdatedDateDialog {...backdatedDialogProps} />
 
       <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
         <DialogContent>
