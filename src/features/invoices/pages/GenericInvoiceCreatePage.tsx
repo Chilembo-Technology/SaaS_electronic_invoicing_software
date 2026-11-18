@@ -18,6 +18,8 @@ import { FormAlert } from '../../../components/forms/FormAlert';
 import { useDocumentTitle } from '../../../hooks/useDocumentTitle';
 import { CREATE_PAGE_TITLES, GF_CURRENCY_OPTIONS } from '../constants';
 import { useCreateGenericInvoice } from '../hooks/useCreateGenericInvoice';
+import { useBackdatedDateConfirmation } from '../hooks/useBackdatedDateConfirmation';
+import { BackdatedDateDialog } from '../components/BackdatedDateDialog';
 import { useCustomerOptions } from '../hooks/useCustomerOptions';
 import { useProductOptions } from '../hooks/useProductOptions';
 import {
@@ -66,6 +68,12 @@ export function GenericInvoiceCreatePage() {
     useCreateGenericInvoice();
   const { customers, isLoading: customersLoading, error: customersError } = useCustomerOptions();
   const { products } = useProductOptions();
+  // Data muito anterior a hoje: confirmação antes de emitir (não bloqueia).
+  const {
+    confirmDate,
+    isChecking: isCheckingDate,
+    dialogProps: backdatedDialogProps,
+  } = useBackdatedDateConfirmation();
 
   const [customerCode, setCustomerCode] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -182,6 +190,8 @@ export function GenericInvoiceCreatePage() {
     const validationError = validateGenericInvoiceForm(form, taxCatalog.options);
     setLocalError(validationError);
     if (validationError) return;
+
+    if (!(await confirmDate(invoiceDate))) return;
 
     await createGenericInvoice(buildGenericInvoicePayload(form));
   };
@@ -614,12 +624,14 @@ export function GenericInvoiceCreatePage() {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading || isCheckingDate}>
             {isLoading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
             Emitir Factura Genérica
           </Button>
         </div>
       </form>
+
+      <BackdatedDateDialog {...backdatedDialogProps} />
     </div>
   );
 }

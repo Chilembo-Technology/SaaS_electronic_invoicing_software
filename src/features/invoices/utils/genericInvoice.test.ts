@@ -175,6 +175,18 @@ describe('Factura Genérica — validação', () => {
     expect(validateGenericInvoiceForm(form([account]), CATALOG)).toBeNull();
   });
 
+  it('recusa movimentos a preço 0 e um total que arredonda a zero', () => {
+    const zeroPrice = exemplarAccount();
+    zeroPrice.movements[0] = { ...zeroPrice.movements[0], unit_price: '0' };
+    expect(validateGenericInvoiceForm(form([zeroPrice]), CATALOG)).toMatch(/superior a zero/);
+
+    const roundsToZero = exemplarAccount();
+    roundsToZero.movements[0] = { ...roundsToZero.movements[0], quantity: '0.001', unit_price: '1' };
+    expect(validateGenericInvoiceForm(form([roundsToZero]), CATALOG)).toBe(
+      'O total do documento não pode ser zero.',
+    );
+  });
+
   it('exige um imposto do catálogo em cada movimento', () => {
     const account = exemplarAccount();
     account.movements[0] = { ...account.movements[0], tax_table_entry_id: '' };

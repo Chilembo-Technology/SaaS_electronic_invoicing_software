@@ -134,6 +134,15 @@ export interface InvoiceFilters {
   per_page?: number;
 }
 
+/** `GET /api/v1/invoices/date-check` — data do documento muito anterior a hoje. */
+export interface InvoiceDateCheck {
+  invoice_date: string;
+  business_days_before_today: number;
+  limit_business_days: number;
+  warning: boolean;
+  message: string | null;
+}
+
 export interface PaginationMeta {
   current_page: number;
   last_page: number;

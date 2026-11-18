@@ -57,6 +57,9 @@ import type {
 import type { Product, ProductType } from '../../products/types';
 import { nowInAngolaForInput, todayInAngola } from '@/lib/angolaTime';
 import { validateRetention } from '../utils/retention';
+import { rejectsZeroValue, validateDocumentValue } from '../utils/documentValue';
+import { useBackdatedDateConfirmation } from '../hooks/useBackdatedDateConfirmation';
+import { BackdatedDateDialog } from '../components/BackdatedDateDialog';
 import { differsFromProductTax, lineTaxFields, validateTaxChoice, type TaxOption } from '../../taxes/catalog';
 import { TaxSelect } from '../../taxes/components/TaxSelect';
 import { useTaxCatalog } from '../../taxes/hooks/useTaxCatalog';
@@ -243,6 +246,13 @@ export function InvoiceCreatePage() {
   } = useProductOptions();
 
   const { categories } = useProductCategories();
+
+  // Data muito anterior a hoje: confirmação antes de emitir (não bloqueia).
+  const {
+    confirmDate,
+    isChecking: isCheckingDate,
+    dialogProps: backdatedDialogProps,
+  } = useBackdatedDateConfirmation();
 
   const { user } = useAuth();
   const companyId = getCompanyId(user);
@@ -619,6 +629,13 @@ export function InvoiceCreatePage() {
         return;
       }
 
+      // Tipos de factura: sem linhas a preço 0 nem total 0 (guias e PP/OR podem).
+      const valueProblem = !usesLineAmount && rejectsZeroValue(type) ? validateDocumentValue(lines) : null;
+      if (valueProblem) {
+        setLocalError(valueProblem);
+        return;
+      }
+
       payload.lines = lines.map((line) =>
         usesLineAmount
           ? {
@@ -717,6 +734,8 @@ export function InvoiceCreatePage() {
         },
       ];
     }
+
+    if (!(await confirmDate(invoiceDate))) return;
 
     await createInvoice(payload, type);
   };
@@ -1392,7 +1411,7 @@ export function InvoiceCreatePage() {
                 )}
               </div>
               <div className="flex flex-wrap justify-end gap-2">
-                <Button type="submit" disabled={isLoading || customersLoading}>
+                <Button type="submit" disabled={isLoading || customersLoading || isCheckingDate}>
                   {isLoading ? (
                     <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                   ) : null}
@@ -1404,7 +1423,7 @@ export function InvoiceCreatePage() {
         ) : (
           <Card>
             <CardContent className="pt-6 flex flex-wrap justify-end gap-2">
-              <Button type="submit" disabled={isLoading || customersLoading}>
+              <Button type="submit" disabled={isLoading || customersLoading || isCheckingDate}>
                 {isLoading ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : null}
@@ -1414,6 +1433,8 @@ export function InvoiceCreatePage() {
           </Card>
         )}
       </form>
+
+      <BackdatedDateDialog {...backdatedDialogProps} />
 
       <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
         <DialogContent>

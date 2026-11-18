@@ -4,6 +4,7 @@
  */
 
 import { validateTaxChoice, type TaxOption } from '../../taxes/catalog';
+import { validateDocumentValue } from './documentValue';
 import type { CreateGenericInvoicePayload, TaxType } from '../types';
 
 export interface MovementDraft {
@@ -181,6 +182,10 @@ export function validateGenericInvoiceForm(
       if (toNumber(movement.unit_price) < 0) {
         return `${label}: o preço unitário não pode ser negativo.`;
       }
+      // GF é um tipo de factura: sem movimentos a preço 0 (fiscal_core recusa com 422).
+      if (toNumber(movement.unit_price) === 0) {
+        return `${label}: o preço unitário tem de ser superior a zero.`;
+      }
       if (taxOptions) {
         const problem = validateTaxChoice(taxOptions, movement.tax_table_entry_id, movement.tax_exemption_code);
         if (problem.tax) return `${label}: escolha o imposto de todos os movimentos.`;
@@ -191,7 +196,8 @@ export function validateGenericInvoiceForm(
     }
   }
 
-  return null;
+  // Total do documento a zero (ex.: 0,001 × 1,00 arredonda a 0).
+  return validateDocumentValue(form.accounts.flatMap((account) => account.movements));
 }
 
 function normalizeTime(time: string): string {
