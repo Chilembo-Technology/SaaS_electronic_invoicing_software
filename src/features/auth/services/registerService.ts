@@ -50,6 +50,7 @@ export function toCompanyPayload(values: CompanyFormValues): CreateCompanyPayloa
   if (city) payload.city = city;
   if (province) payload.province = province;
   if (agtCertificate) payload.agt_certificate_number = agtCertificate;
+  if (values.planCode) payload.plan_code = values.planCode;
 
   return payload;
 }

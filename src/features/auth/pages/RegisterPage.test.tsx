@@ -89,7 +89,7 @@ describe("RegisterPage — passo 1 (empresa)", () => {
     renderPage();
 
     expect(screen.getByText("Criar conta da empresa")).toBeInTheDocument();
-    expect(screen.getByText("Passo 1 de 2 · dados fiscais e de contacto")).toBeInTheDocument();
+    expect(screen.getByText(/Passo 1 de 2 · dados fiscais e de contacto/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Criar empresa e continuar/ })).toBeInTheDocument();
     expect(screen.getByText("Empresa")).toBeInTheDocument();
     expect(screen.getByText("Utilizador administrador")).toBeInTheDocument();
@@ -191,14 +191,30 @@ describe("RegisterPage — passo 2 e confirmação", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Voltar/ }));
 
-    expect(await screen.findByText("Passo 1 de 2 · dados fiscais e de contacto")).toBeInTheDocument();
+    expect(await screen.findByText(/Passo 1 de 2 · dados fiscais e de contacto/)).toBeInTheDocument();
     expect(serviceMocks.createCompany).toHaveBeenCalledTimes(1);
   });
 
-  it("apresenta o plano escolhido na Landing Page (?plano=)", () => {
+  it("pré-selecciona o plano escolhido na Landing Page (?plano=)", () => {
     renderPage("/registar?plano=empresa");
 
-    expect(screen.getByText(/Plano/)).toBeInTheDocument();
-    expect(screen.getByText("Empresa (pré-pago)")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Empresarial/ })).toBeChecked();
+    expect(screen.getByText("Empresarial", { selector: "strong" })).toBeInTheDocument();
+  });
+
+  it("começa no Profissional quando a Landing Page indica o pós-pago", () => {
+    renderPage("/registar?plano=pos-pago");
+
+    expect(screen.getByRole("radio", { name: /Profissional/ })).toBeChecked();
+  });
+
+  it("envia no registo o plano escolhido no formulário", async () => {
+    renderPage("/registar?plano=empresa");
+    fireEvent.click(screen.getByRole("radio", { name: /Essencial/ }));
+
+    await submitValidCompany();
+
+    expect(serviceMocks.createCompany.mock.calls[0][0]).toMatchObject({ plan_code: "PRE_ESSENCIAL" });
+    expect(screen.getByText("Essencial", { selector: "strong" })).toBeInTheDocument();
   });
 });

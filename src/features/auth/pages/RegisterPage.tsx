@@ -9,7 +9,7 @@ import { CompanyStepForm } from "../components/CompanyStepForm";
 import { RegisterStepper } from "../components/RegisterStepper";
 import { RegisterSuccess } from "../components/RegisterSuccess";
 import { useRegisterForm } from "../hooks/useRegisterForm";
-import { resolvePlanLabel } from "../utils/registerValidation";
+import { registrationPlanFromQuery, registrationPlanName } from "../utils/registrationPlans";
 
 /** Tempo (ms) antes do redireccionamento automático para o login. */
 const REDIRECT_DELAY_MS = 5000;
@@ -27,9 +27,9 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Plano escolhido na Landing Page (`/registar?plano=profissional`).
-  const planParam = searchParams.get("plano");
-  const planLabel = planParam ? resolvePlanLabel(planParam) : null;
+  // Plano escolhido na Landing Page (`/registar?plano=profissional`): pré-selecciona
+  // o campo Plano do passo 1, que o utilizador pode mudar.
+  const initialPlanCode = registrationPlanFromQuery(searchParams.get("plano"));
 
   const {
     step,
@@ -53,7 +53,10 @@ export function RegisterPage() {
     goToCompanyStep,
     goToUserStep,
     setGlobalError,
-  } = useRegisterForm();
+  } = useRegisterForm(initialPlanCode);
+
+  // O plano mostrado é sempre o que vai ser enviado no registo.
+  const planLabel = registrationPlanName(companyValues.planCode);
 
   // Depois do sucesso, encaminha para o login (o botão da confirmação antecipa-o).
   useEffect(() => {

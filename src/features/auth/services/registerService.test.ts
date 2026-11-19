@@ -37,7 +37,7 @@ const companyValues: CompanyFormValues = {
 
 describe("toCompanyPayload", () => {
   it("normaliza os campos e omite os opcionais vazios", () => {
-    expect(toCompanyPayload({ ...companyValues, province: "", agtCertificateNumber: "" })).toEqual({
+    expect(toCompanyPayload({ ...companyValues, province: "", agtCertificateNumber: "", planCode: "" })).toEqual({
       company_name: "Kianda Logística, Lda",
       tax_number: "541789632LA045",
       admin_email: "admin@kianda.ao",
@@ -56,7 +56,12 @@ describe("toCompanyPayload", () => {
       address: "Rua 1",
       city: "Luanda",
       agt_certificate_number: "AGT-001",
+      plan_code: "PRE_PROFISSIONAL",
     });
+  });
+
+  it("envia o plano escolhido no registo", () => {
+    expect(toCompanyPayload({ ...companyValues, planCode: "PRE_ESSENCIAL" }).plan_code).toBe("PRE_ESSENCIAL");
   });
 });
 

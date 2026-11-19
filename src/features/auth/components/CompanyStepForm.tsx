@@ -8,6 +8,7 @@ import { cn } from "../../../app/components/ui/utils";
 import { FieldError } from "../../../components/forms/FieldError";
 import { FormField } from "../../../components/forms/FormField";
 import type { CompanyFieldErrors, CompanyFormValues } from "../types/register";
+import { REGISTRATION_PLANS } from "../utils/registrationPlans";
 import {
   COMPANY_NAME_MAX,
   LOGO_ACCEPT_ATTRIBUTE,
@@ -181,6 +182,13 @@ export function CompanyStepForm({
         />
       </div>
 
+      <PlanField
+        value={values.planCode}
+        error={errors.planCode}
+        disabled={fieldsDisabled}
+        onChange={(code) => onChange("planCode", code)}
+      />
+
       <LogoField
         file={values.logo}
         error={errors.logo}
@@ -218,6 +226,71 @@ export function CompanyStepForm({
         </Button>
       )}
     </form>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Plano — escolha opcional, Profissional pré-seleccionado             */
+/* ------------------------------------------------------------------ */
+
+interface PlanFieldProps {
+  value: string;
+  error?: string;
+  disabled: boolean;
+  onChange: (code: string) => void;
+}
+
+/**
+ * Grupo de rádios nativos (acessível por teclado e leitor de ecrã). Os preços
+ * não aparecem aqui: vivem no subscription_service e na página de planos.
+ */
+function PlanField({ value, error, disabled, onChange }: PlanFieldProps) {
+  const hasError = Boolean(error);
+
+  return (
+    <fieldset aria-describedby={hasError ? "planCode-error" : "planCode-hint"}>
+      <legend className="text-sm font-medium text-foreground">Plano</legend>
+
+      <div className="mt-1.5 grid gap-3 sm:grid-cols-3">
+        {REGISTRATION_PLANS.map((plan) => {
+          const checked = value === plan.code;
+
+          return (
+            <label
+              key={plan.code}
+              className={cn(
+                "flex cursor-pointer flex-col gap-1 rounded-xl border p-3 transition-colors duration-200",
+                checked ? "border-brand-navy bg-brand-navy/5" : "border-border bg-background hover:bg-accent",
+                hasError && "border-destructive",
+                disabled && "pointer-events-none opacity-60",
+              )}
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <input
+                  type="radio"
+                  name="planCode"
+                  value={plan.code}
+                  checked={checked}
+                  disabled={disabled}
+                  onChange={() => onChange(plan.code)}
+                  className="accent-brand-navy"
+                />
+                {plan.name}
+              </span>
+              <span className="text-xs text-muted-foreground">{plan.description}</span>
+            </label>
+          );
+        })}
+      </div>
+
+      {hasError ? (
+        <FieldError id="planCode-error" message={String(error)} />
+      ) : (
+        <p id="planCode-hint" className="mt-1.5 text-xs text-muted-foreground">
+          Começa com 14 dias de teste em modo formação. Pode mudar de plano depois.
+        </p>
+      )}
+    </fieldset>
   );
 }
 

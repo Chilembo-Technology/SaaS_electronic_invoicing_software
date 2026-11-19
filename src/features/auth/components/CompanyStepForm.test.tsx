@@ -136,4 +136,34 @@ describe("CompanyStepForm", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent(MESSAGES.logoMimes);
   });
+
+  it("oferece os planos de registo com o Profissional pré-seleccionado", () => {
+    renderForm();
+
+    expect(screen.getByRole("radio", { name: /Essencial/ })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /Profissional/ })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /Empresarial/ })).not.toBeChecked();
+    expect(screen.getByText(/14 dias de teste em modo formação/)).toBeInTheDocument();
+  });
+
+  it("entrega ao estado o plano escolhido", () => {
+    const onChange = vi.fn();
+    renderForm({ onChange });
+
+    fireEvent.click(screen.getByRole("radio", { name: /Essencial/ }));
+
+    expect(onChange).toHaveBeenCalledWith("planCode", "PRE_ESSENCIAL");
+  });
+
+  it("mostra o erro do backend no campo do plano", () => {
+    renderForm({ errors: { planCode: "O plano escolhido não está disponível no registo." } });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("O plano escolhido não está disponível no registo.");
+  });
+
+  it("bloqueia a escolha do plano depois de criada a empresa", () => {
+    renderForm({ locked: true });
+
+    expect(screen.getByRole("radio", { name: /Profissional/ })).toBeDisabled();
+  });
 });

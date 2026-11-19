@@ -42,6 +42,7 @@ const COMPANY_FIELD_MAP: Record<string, string> = {
   province: "province",
   agt_certificate_number: "agtCertificateNumber",
   logo: "logo",
+  plan_code: "planCode",
 };
 
 const ADMIN_USER_FIELD_MAP: Record<string, string> = {
@@ -101,9 +102,13 @@ function splitBackendFieldErrors(
   return { fields, unmatched };
 }
 
-export function useRegisterForm() {
+/**
+ * @param initialPlanCode plano pré-seleccionado (ex.: vindo do `?plano=` da Landing Page).
+ */
+export function useRegisterForm(initialPlanCode: string = emptyCompanyValues.planCode) {
+  const initialCompanyValues: CompanyFormValues = { ...emptyCompanyValues, planCode: initialPlanCode };
   const [step, setStep] = useState<RegisterStep>(1);
-  const [companyValues, setCompanyValues] = useState<CompanyFormValues>(emptyCompanyValues);
+  const [companyValues, setCompanyValues] = useState<CompanyFormValues>(initialCompanyValues);
   const [companyErrors, setCompanyErrors] = useState<CompanyFieldErrors>({});
   const [companyTouched, setCompanyTouched] = useState<TouchedMap<keyof CompanyFormValues>>({});
   const [userValues, setUserValues] = useState<AdminUserFormValues>(emptyAdminUserValues);
@@ -398,7 +403,7 @@ export function useRegisterForm() {
   /** Limpa todo o formulário (útil para recomeçar depois de um erro). */
   const resetForm = () => {
     setStep(1);
-    setCompanyValues(emptyCompanyValues);
+    setCompanyValues(initialCompanyValues);
     setCompanyErrors({});
     setCompanyTouched({});
     setUserValues(emptyAdminUserValues);

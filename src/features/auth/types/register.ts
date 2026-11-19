@@ -5,6 +5,8 @@
  * O campo de contexto multi-empresa chama-se SEMPRE `company_id`.
  */
 
+import { DEFAULT_REGISTRATION_PLAN } from '../utils/registrationPlans';
+
 export type RegisterStep = 1 | 2;
 
 /** Valores do passo 1 — dados da empresa (`POST /v1/company/store`). */
@@ -18,6 +20,8 @@ export interface CompanyFormValues {
   province: string;
   agtCertificateNumber: string;
   logo: File | null;
+  /** Plano escolhido (opcional no backend; Profissional pré-seleccionado). */
+  planCode: string;
 }
 
 /** Valores do passo 2 — utilizador administrador (`POST /v1/users`). */
@@ -47,6 +51,7 @@ export const emptyCompanyValues: CompanyFormValues = {
   province: '',
   agtCertificateNumber: '',
   logo: null,
+  planCode: DEFAULT_REGISTRATION_PLAN,
 };
 
 export const emptyAdminUserValues: AdminUserFormValues = {
@@ -70,6 +75,8 @@ export interface CreateCompanyPayload {
   city?: string;
   province?: string;
   agt_certificate_number?: string;
+  /** Plano escolhido no registo (subscription_service; teste de 14 dias). */
+  plan_code?: string;
 }
 
 /** Payload real enviado para `POST /v1/users` (nomes do Laravel). */
