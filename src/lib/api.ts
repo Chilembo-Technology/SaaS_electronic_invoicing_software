@@ -1,5 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
+import { notifySubscriptionError } from './subscriptionErrorToast';
+
 export const TOKEN_KEY = '@Chilembo:token';
 export const LEGACY_TOKEN_KEY = '@SaaS:token';
 
@@ -189,3 +191,11 @@ const handleUnauthorizedInterceptor = (error: unknown) => {
 authApi.interceptors.response.use((response) => response, handleUnauthorizedInterceptor);
 orgApi.interceptors.response.use((response) => response, handleUnauthorizedInterceptor);
 fiscalApi.interceptors.response.use((response) => response, handleUnauthorizedInterceptor);
+
+/**
+ * Subscrição (402 / 503 USER_SEATS_BUSY): toast com a mensagem e a acção do
+ * mapa central (`subscriptionErrors.ts`). O erro segue para o ecrã.
+ */
+authApi.interceptors.response.use((response) => response, notifySubscriptionError);
+orgApi.interceptors.response.use((response) => response, notifySubscriptionError);
+fiscalApi.interceptors.response.use((response) => response, notifySubscriptionError);

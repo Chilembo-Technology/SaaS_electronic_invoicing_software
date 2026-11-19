@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+import { subscriptionErrorFromResponse, type SubscriptionErrorInfo } from '../../../lib/subscriptionErrors';
+
 /**
  * Normalização de erros da API.
  *
@@ -20,6 +22,11 @@ export interface NormalizedApiError {
   isNetworkError: boolean;
   /** Erro de validação (422) — corrigível nos campos do formulário. */
   isValidationError: boolean;
+  /**
+   * A subscrição da empresa não permite a operação (402, ou 503 USER_SEATS_BUSY):
+   * código, título e acção sugerida. `message` já traz a mensagem em português.
+   */
+  subscription?: SubscriptionErrorInfo;
 }
 
 export const API_ERROR_MESSAGES = {
@@ -79,6 +86,19 @@ export function normalizeApiError(
     }
 
     const body = (error.response.data ?? {}) as LaravelErrorBody;
+
+    // Subscrição (402 / 503 USER_SEATS_BUSY): mensagem do mapa central, nunca a técnica.
+    const subscription = subscriptionErrorFromResponse(status, body);
+    if (subscription) {
+      return {
+        status,
+        fieldErrors: {},
+        message: subscription.message,
+        isNetworkError: false,
+        isValidationError: false,
+        subscription,
+      };
+    }
 
     if (status === 422) {
       return {

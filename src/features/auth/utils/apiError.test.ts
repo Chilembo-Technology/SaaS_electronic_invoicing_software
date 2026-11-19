@@ -93,3 +93,47 @@ describe("normalizeApiError", () => {
     expect(result.fieldErrors).toEqual({});
   });
 });
+
+describe("normalizeApiError — subscrição (402 / 503 USER_SEATS_BUSY)", () => {
+  it("troca a mensagem técnica do 402 pela do mapa central e expõe o código e a acção", () => {
+    const error = httpError(402, {
+      success: false,
+      message: "A empresa atingiu o limite de documentos do período.",
+      code: "LIMIT_REACHED",
+    });
+
+    const result = normalizeApiError(error);
+
+    expect(result.status).toBe(402);
+    expect(result.isValidationError).toBe(false);
+    expect(result.message).toMatch(/Atingiu o limite de documentos do seu plano/);
+    expect(result.subscription?.code).toBe("LIMIT_REACHED");
+    expect(result.subscription?.action?.href).toBe("/planos");
+  });
+
+  it("dá a mensagem de funcionalidade fora do plano a uma NL bloqueada", () => {
+    const result = normalizeApiError(httpError(402, { code: "FEATURE_NOT_IN_PLAN", message: "x" }));
+
+    expect(result.message).toMatch(/não está incluída no seu plano/);
+  });
+
+  it("dá a mensagem do tecto de utilizadores ao criar um utilizador a mais", () => {
+    const result = normalizeApiError(httpError(402, { code: "USER_LIMIT_REACHED", message: "x" }));
+
+    expect(result.message).toMatch(/número máximo de utilizadores/);
+  });
+
+  it("trata o 503 USER_SEATS_BUSY como temporário, não como erro do servidor", () => {
+    const result = normalizeApiError(httpError(503, { code: "USER_SEATS_BUSY", message: "x" }));
+
+    expect(result.message).toMatch(/Aguarde uns segundos/);
+    expect(result.message).not.toBe(API_ERROR_MESSAGES.server);
+  });
+
+  it("mantém o 503 sem código como erro do servidor", () => {
+    const result = normalizeApiError(httpError(503, { message: "Service Unavailable" }));
+
+    expect(result.message).toBe(API_ERROR_MESSAGES.server);
+    expect(result.subscription).toBeUndefined();
+  });
+});
